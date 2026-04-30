@@ -1,0 +1,16 @@
+# Cloudflare Workers config for Giraffe Wallet (Next.js + OpenNext).
+# https://opennext.js.org/cloudflare
+
+name = "giraffe-wallet"
+main = ".open-next/worker.js"
+compatibility_date = "2025-09-01"
+# nodejs_compat is required for crypto.timingSafeEqual and next/headers cookies().
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[observability]
+enabled = true
