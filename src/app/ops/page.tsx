@@ -8,9 +8,12 @@ import { Chip } from "@/components/ui/Chip";
 import { KPICard } from "@/components/ui/KPICard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { LinkButton } from "@/components/ui/Button";
-import { formatCredits, relativeTime } from "@/lib/utils";
+import { addDays, formatCredits, relativeTime, todayIso } from "@/lib/utils";
+import type { EngagementStatus } from "@/types";
 
 export const dynamic = "force-dynamic";
+
+const ENGAGEMENT_STATUSES: EngagementStatus[] = ["active", "paused", "expired", "cancelled"];
 
 function dayChip(daysRemaining: number): "success" | "warning" | "danger" {
   if (daysRemaining > 30) return "success";
@@ -23,14 +26,15 @@ export default async function OpsDashboard({ searchParams }: { searchParams: Pro
   const session = await getStaffSession();
   if (!session) redirect("/ops/login");
   const store = getStore();
-  const summaries = await store.listEngagements({ search: sp.q, status: sp.status as any }, session.userId);
+  const status = ENGAGEMENT_STATUSES.includes(sp.status as EngagementStatus) ? (sp.status as EngagementStatus) : undefined;
+  const summaries = await store.listEngagements({ search: sp.q, status }, session.userId);
 
   const active = summaries.filter((s) => s.engagement.status === "active");
   const totalFlex = active.reduce((sum, s) => sum + s.balance.flexCreditsRemaining, 0);
   const ending14 = active.filter((s) => s.daysRemaining <= 14).length;
 
   // Overdue tasks (in_progress for >7 days)
-  const sevenAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const sevenAgo = addDays(todayIso(), -7);
   const overdue = (
     await Promise.all(active.map(async (s) => (await store.listTasks(s.engagement.id, { status: ["in_progress"] })).filter((t) => (t.startedAt ?? "") < sevenAgo)))
   ).flat().length;

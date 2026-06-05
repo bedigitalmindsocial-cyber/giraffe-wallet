@@ -5,6 +5,7 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { MethodTagChip } from "@/components/catalog/MethodTagChip";
 import { LinkButton } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { CopyPasscode } from "@/components/ops/CopyPasscode";
@@ -195,7 +196,10 @@ export default async function EngagementWorkspace({
                         <Link href={`/ops/engagements/${id}/tasks/${t.id}`} className="font-medium hover:underline">{t.title}</Link>
                         {t.isSystemGenerated ? <Chip className="ml-2">system</Chip> : null}
                       </td>
-                      <td className="text-sm text-[var(--color-muted)]">{svc?.name ?? "-"}</td>
+                      <td className="text-sm text-[var(--color-muted)]">
+                        {svc?.name ?? "-"}
+                        {svc?.methodTag ? <div className="mt-1"><MethodTagChip methodTag={svc.methodTag} compact /></div> : null}
+                      </td>
                       <td><Chip variant={t.bucket === "core" ? "purple" : "default"}>{t.bucket}</Chip></td>
                       <td className="mono text-right">{t.creditCostLocked}</td>
                       <td><Chip variant={t.status === "done" ? "success" : t.status === "cancelled" ? "danger" : t.status === "submitted" || t.status === "revision" ? "warning" : "purple"}>{t.status.replace("_", " ")}</Chip></td>

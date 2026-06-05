@@ -1,7 +1,8 @@
-// Staff auth. In Supabase mode this would integrate with @supabase/supabase-js
-// auth. In mock mode (no Supabase env), we use a simple HMAC-signed cookie
-// keyed off email + role for a fast local dev loop.
+// Staff auth. In mock mode, we use a shared dev password. In Supabase mode,
+// staff credentials are verified with Supabase Auth before the app user row is
+// loaded from public.users.
 
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { sealJson, openJson, safePasswordEquals } from "./hmac";
 import { getStore } from "@/lib/data/store";
@@ -26,17 +27,30 @@ function inMockMode(): boolean {
   return !(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+async function verifySupabasePassword(email: string, password: string): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return null;
+
+  const supabase = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return null;
+  return data.user.id;
+}
+
 export async function staffLogin(email: string, password: string): Promise<User | null> {
   const store = getStore();
-  const user = await store.getUserByEmail(email);
-  if (!user || !user.isActive) return null;
+  let user: User | null = null;
 
   if (inMockMode()) {
+    user = await store.getUserByEmail(email);
+    if (!user || !user.isActive) return null;
     if (!safePasswordEquals(password, MOCK_PASSWORD)) return null;
   } else {
-    // In Supabase mode, the API route should call Supabase Auth signInWithPassword
-    // and only call this helper after that succeeds. Fail safe: refuse here.
-    if (!password || password.length < 6) return null;
+    const userId = await verifySupabasePassword(email, password);
+    if (!userId) return null;
+    user = await store.getUserById(userId);
+    if (!user || !user.isActive || user.email.toLowerCase() !== email.toLowerCase()) return null;
   }
 
   const payload: StaffPayload = {

@@ -66,7 +66,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <div>
             <label className="label">Credit value (₹)</label>
             <input className="input mono" type="number" step="1" min="1" name="creditValue" defaultValue={previewSettings?.creditValue ?? settings.creditValue} required />
-            <p className="help">Each credit's INR equivalent for client-facing math.</p>
+            <p className="help">Each credit&apos;s INR equivalent for client-facing math.</p>
           </div>
           <button className="btn btn-primary w-full" type="submit">Preview impact</button>
         </form>

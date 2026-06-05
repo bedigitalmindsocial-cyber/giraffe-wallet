@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { catalogLogin, isCatalogAdmin } from "@/lib/auth/catalog-session";
 
+export const dynamic = "force-dynamic";
+
 export default async function CatalogLogin({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const sp = await searchParams;
   if (await isCatalogAdmin()) redirect(sp.next || "/catalog");

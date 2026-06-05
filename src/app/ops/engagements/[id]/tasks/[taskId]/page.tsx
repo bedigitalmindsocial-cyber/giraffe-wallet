@@ -5,6 +5,7 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { MethodTagChip } from "@/components/catalog/MethodTagChip";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { SubmitHoursForm } from "@/components/ops/SubmitHoursForm";
 import { relativeTime } from "@/lib/utils";
@@ -100,6 +101,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
           <Chip variant={task.bucket === "core" ? "purple" : "default"}>{task.bucket}</Chip>
           <Chip variant={task.status === "done" ? "success" : task.status === "cancelled" ? "danger" : "purple"}>{task.status.replace("_", " ")}</Chip>
           <span className="mono text-sm">{task.creditCostLocked} credits</span>
+          {svc?.methodTag ? <MethodTagChip methodTag={svc.methodTag} /> : null}
           {escalated ? <Chip variant="warning">↑ escalated</Chip> : null}
           {task.isSystemGenerated ? <Chip>system</Chip> : null}
         </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { staffLogout } from "@/lib/auth/staff-auth";
 
-export async function POST() {
+export async function POST(request: Request) {
   await staffLogout();
-  return NextResponse.redirect(new URL("/ops/login", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"));
+  return NextResponse.redirect(new URL("/ops/login", request.url));
 }

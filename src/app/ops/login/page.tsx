@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { staffLogin, getStaffSession, isMockAuthMode } from "@/lib/auth/staff-auth";
 
+export const dynamic = "force-dynamic";
+
 export default async function OpsLogin({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const sp = await searchParams;
   if (await getStaffSession()) redirect(sp.next || "/ops");

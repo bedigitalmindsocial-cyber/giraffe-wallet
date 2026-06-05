@@ -5,6 +5,8 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { TaskNewForm } from "@/components/ops/TaskNewForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewTask({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getStaffSession();

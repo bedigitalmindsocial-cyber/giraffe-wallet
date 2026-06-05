@@ -3,9 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { ServiceForm } from "@/components/catalog/ServiceForm";
-import type { Actor, ServiceTag } from "@/types";
+import type { Actor, ServiceMethodTag, ServiceTag } from "@/types";
 
 const ADMIN: Actor = { type: "super_admin", id: "catalog-admin", name: "Super admin" };
+
+export const dynamic = "force-dynamic";
 
 export default async function EditService({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +20,8 @@ export default async function EditService({ params }: { params: Promise<{ id: st
     const store = getStore();
     const tagRaw = String(formData.get("tag") || "");
     const tag: ServiceTag = tagRaw === "" ? null : (tagRaw as ServiceTag);
+    const methodTagRaw = String(formData.get("methodTag") || "");
+    const methodTag: ServiceMethodTag = methodTagRaw === "" ? null : (methodTagRaw as ServiceMethodTag);
     const overrideOn = formData.get("creditCostOverride") === "on";
     await store.upsertService({
       id,
@@ -28,6 +32,7 @@ export default async function EditService({ params }: { params: Promise<{ id: st
       avgHours: parseFloat(String(formData.get("avgHours") || "0")) || 0,
       includedRevisions: parseInt(String(formData.get("includedRevisions") || "2")) || 2,
       tag,
+      methodTag,
       creditCostOverride: overrideOn,
       creditCost: overrideOn ? parseInt(String(formData.get("creditCost") || "0")) || 0 : undefined,
       creditCostOverrideReason: overrideOn ? String(formData.get("creditCostOverrideReason") || "").trim() : undefined,

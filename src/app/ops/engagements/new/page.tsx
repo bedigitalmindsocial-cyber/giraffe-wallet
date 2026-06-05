@@ -5,6 +5,8 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { addDays, todayIso } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewEngagement({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const sp = await searchParams;
   const session = await getStaffSession();

@@ -5,33 +5,18 @@
 import type {
   Actor,
   AuditEntry,
-  AuditFilters,
   Client,
-  ClientInput,
-  EfficiencyReport,
   Engagement,
   EngagementBalance,
-  EngagementFilters,
-  EngagementInput,
   EngagementSummary,
-  HoursEntry,
   Package,
   PackageInput,
-  ReportFilters,
   Role,
-  RoleInput,
   Service,
-  ServiceFilters,
-  ServiceInput,
   Settings,
-  SettingsInput,
-  StaffRole,
   Task,
   TaskBucket,
-  TaskFilters,
-  TaskInput,
   User,
-  UtilizationReport,
 } from "@/types";
 import type { DataStore } from "./store";
 import { autoCreditCost } from "@/lib/credits";
@@ -59,7 +44,7 @@ const tasks: Task[] = [];
 const users: User[] = [];
 const audit: AuditEntry[] = [];
 let settings: Settings = {
-  baseHourlyRate: 500,
+  baseHourlyRate: 125,
   markupMultiplier: 2.5,
   creditValue: 500,
   updatedAt: timestamp(),
@@ -141,28 +126,61 @@ interface ServiceSeed {
   category: string;
   roleName: string;
   avgHours: number;
+  includedRevisions?: number;
   tag?: Service["tag"];
+  methodTag?: Service["methodTag"];
 }
 
 function seedServices(): void {
   const data: ServiceSeed[] = [
-    { name: "Social post (single)", description: "One static post with caption, hashtags, and platform sizing.", category: "Social", roleName: "Executive", avgHours: 1.5, tag: "POPULAR" },
-    { name: "Social carousel (5 slides)", description: "Multi-slide post with copy and design.", category: "Social", roleName: "Executive", avgHours: 4.0, tag: null },
-    { name: "Blog graphic", description: "Header graphic for an article. Two revisions included.", category: "Design", roleName: "Executive", avgHours: 3.0, tag: null },
-    { name: "Web page (single)", description: "One landing page or content page, copy plus design.", category: "Design", roleName: "Manager", avgHours: 8.0, tag: null },
-    { name: "Long-form article", description: "1200 to 1500 word article with research and edit pass.", category: "Content", roleName: "Manager", avgHours: 8.0, tag: null },
-    { name: "Whitepaper or case study", description: "Long-form research piece with structure and design.", category: "Content", roleName: "Senior Manager", avgHours: 16.0, tag: null },
-    { name: "Pitch deck", description: "12 to 15 slide deck with structure, copy, and design.", category: "Sales Enablement", roleName: "Senior Manager", avgHours: 12.0, tag: null },
-    { name: "Brand strategy doc", description: "Positioning, messaging architecture, brand voice.", category: "Strategy", roleName: "Senior Partner", avgHours: 15.0, tag: "NEW" },
-    { name: "Press article", description: "PR-ready article for placement, including pitch note.", category: "PR", roleName: "Manager", avgHours: 6.0, tag: null },
-    { name: "Email campaign", description: "One email with copy, design, and segmentation note.", category: "Email", roleName: "Executive", avgHours: 3.0, tag: null },
-    { name: "Video ad (15s to 30s)", description: "Script, edit, and one revision.", category: "Video", roleName: "Manager", avgHours: 12.0, tag: null },
-    { name: "Photography (half day)", description: "On-site product or environment shoot.", category: "Production", roleName: "Manager", avgHours: 5.0, tag: null },
-    { name: "Infographic", description: "Single static infographic with research and design.", category: "Design", roleName: "Executive", avgHours: 4.0, tag: null },
-    { name: "SEO audit", description: "Technical and content audit with prioritized action list.", category: "SEO", roleName: "Manager", avgHours: 6.0, tag: null },
-    { name: "Strategy: Quarterly Plan (system task)", description: "Quarterly roadmap and monthly review.", category: "Strategy (Core)", roleName: "Manager", avgHours: 16.0 },
-    { name: "Website Maintenance (system task)", description: "Uptime, backups, security patches, performance.", category: "Tech (Core)", roleName: "Manager", avgHours: 10.0 },
-    { name: "Monthly Content System (system task)", description: "One pillar piece plus derivative posts and emails for the month.", category: "Content (Core)", roleName: "Manager", avgHours: 14.0 },
+    { name: "Social post (single)", description: "One static post with caption, hashtags, and platform sizing.", category: "Social", roleName: "Executive", avgHours: 1.5, tag: "POPULAR", methodTag: "AI POWERED" },
+    { name: "Social carousel (5 slides)", description: "Multi-slide post with copy and design.", category: "Social", roleName: "Executive", avgHours: 4.0, tag: null, methodTag: "HYBRID" },
+    { name: "Blog graphic", description: "Header graphic for an article. Two revisions included.", category: "Design", roleName: "Executive", avgHours: 3.0, tag: null, methodTag: "HYBRID" },
+    { name: "Web page (single)", description: "One landing page or content page, copy plus design.", category: "Design", roleName: "Manager", avgHours: 8.0, tag: null, methodTag: "HYBRID" },
+    { name: "Long-form article", description: "1200 to 1500 word article with research and edit pass.", category: "Content", roleName: "Manager", avgHours: 8.0, tag: null, methodTag: "HYBRID" },
+    { name: "Whitepaper or case study", description: "Long-form research piece with structure and design.", category: "Content", roleName: "Senior Manager", avgHours: 16.0, tag: null, methodTag: "ARTISAN" },
+    { name: "Pitch deck", description: "12 to 15 slide deck with structure, copy, and design.", category: "Sales Enablement", roleName: "Senior Manager", avgHours: 12.0, tag: null, methodTag: "ARTISAN" },
+    { name: "Brand strategy doc", description: "Positioning, messaging architecture, brand voice.", category: "Strategy", roleName: "Senior Partner", avgHours: 15.0, tag: "NEW", methodTag: "ARTISAN" },
+    { name: "Press article", description: "PR-ready article for placement, including pitch note.", category: "PR", roleName: "Manager", avgHours: 6.0, tag: null, methodTag: "ARTISAN" },
+    { name: "Email campaign", description: "One email with copy, design, and segmentation note.", category: "Email", roleName: "Executive", avgHours: 3.0, tag: null, methodTag: "AI POWERED" },
+    { name: "Video ad (15s to 30s)", description: "Script, edit, and one revision.", category: "Video", roleName: "Manager", avgHours: 12.0, tag: null, methodTag: "HYBRID" },
+    { name: "Photography (half day)", description: "On-site product or environment shoot.", category: "Production", roleName: "Manager", avgHours: 5.0, tag: null, methodTag: "ARTISAN" },
+    { name: "Infographic", description: "Single static infographic with research and design.", category: "Design", roleName: "Executive", avgHours: 4.0, tag: null, methodTag: "HYBRID" },
+    { name: "SEO audit", description: "Technical and content audit with prioritized action list.", category: "SEO", roleName: "Manager", avgHours: 6.0, tag: null, methodTag: "HYBRID" },
+    { name: "New Webpage Template", description: "New reusable webpage structure with layout, core copy blocks, visual direction, and responsive implementation notes.", category: "Web Development", roleName: "Manager", avgHours: 5.0, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "New Webpage Variation", description: "Adapt an approved webpage template for a new offer, audience, or campaign with revised copy and imagery.", category: "Web Development", roleName: "Executive", avgHours: 4.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "AI Webpage Copy & Image Variation", description: "Fast AI-generated page copy and image-direction variant, reviewed and polished by an expert before delivery.", category: "Web Development", roleName: "Executive", avgHours: 2.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Text & Image Changes (per webpage)", description: "Small copy swaps, image replacements, section edits, and formatting updates on an existing webpage.", category: "Website Changes", roleName: "Executive", avgHours: 0.8, includedRevisions: 1, tag: null, methodTag: "AI POWERED" },
+    { name: "Research & Content Writing (100 words)", description: "Research-backed copy block or article section delivered in 100-word units with an edit pass.", category: "Content Writing", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: null, methodTag: "AI POWERED" },
+    { name: "Website Graphics", description: "Custom website visual asset such as a section graphic, hero support visual, feature illustration, or landing-page banner.", category: "Website Graphics", roleName: "Executive", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "AI Website Graphic Variation", description: "AI-assisted website graphic variant from an existing direction, refined for brand fit and clean delivery.", category: "Website Graphics", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Blog Graphics", description: "Article header or supporting blog visual sized for web publishing and social sharing.", category: "Website Graphics", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "AI Blog Graphic Variation", description: "Rapid AI-assisted blog visual variation, curated and polished for brand consistency.", category: "Website Graphics", roleName: "Executive", avgHours: 1.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Static Posts/Ads", description: "Single static social post or ad creative with caption-ready messaging, platform sizing, and export files.", category: "Social Media Creatives", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: "POPULAR", methodTag: "AI POWERED" },
+    { name: "AI Static Post/Ad Variation", description: "Fast AI-powered variation of an approved static post or ad, expert-polished for brand tone and layout.", category: "Social Media Creatives", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Video Ads (<30 Seconds)", description: "Short-form video ad with script, edit direction, basic motion, and one platform-ready export under 30 seconds.", category: "Social Media Creatives", roleName: "Manager", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Video Ads (<60 Seconds)", description: "Video ad up to 60 seconds with script, edit plan, motion direction, and export-ready delivery.", category: "Social Media Creatives", roleName: "Manager", avgHours: 4.0, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Video Ads (>60 Seconds)", description: "Longer-form video ad or explainer requiring deeper scripting, sequencing, edit supervision, and review.", category: "Social Media Creatives", roleName: "Manager", avgHours: 8.0, includedRevisions: 2, tag: null, methodTag: "ARTISAN" },
+    { name: "AI Video Ad Concept Cut (<30 Seconds)", description: "AI-assisted short video concept, script, and first-cut direction for quick testing before a full production pass.", category: "Social Media Creatives", roleName: "Executive", avgHours: 3.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Print Ads", description: "Print-ready advertisement concept with copy, layout, visual direction, and press/export specifications.", category: "Social Media Creatives", roleName: "Manager", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Carousel Ads", description: "Multi-slide ad creative with structured narrative, slide copy, design, and platform-ready exports.", category: "Social Media Creatives", roleName: "Executive", avgHours: 4.0, includedRevisions: 2, tag: "POPULAR", methodTag: "HYBRID" },
+    { name: "AI Carousel Ad Variation", description: "AI-assisted carousel variation using an approved concept, polished by an expert for clarity and brand fit.", category: "Social Media Creatives", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Social Media Covers", description: "Platform cover, header, or profile-banner design adapted to channel dimensions and brand requirements.", category: "Social Media Creatives", roleName: "Executive", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Presentation & Pitch Decks (up to 8 pages)", description: "Per-page deck design and copy polish for concise investor, sales, or internal presentations up to 8 pages.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.6, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Presentation & Pitch Decks (more than 8 pages)", description: "Per-page continuation pricing for larger decks once the structure and direction are already established.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Presentation Templates", description: "Reusable presentation template page with master visual system, typography, components, and page structure.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.6, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "AI Presentation Draft (up to 8 slides)", description: "AI-assisted first draft for an 8-slide presentation, expert-curated into a coherent narrative and structure.", category: "Presentation & Documents", roleName: "Executive", avgHours: 4.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Infographics (per page)", description: "Single infographic page with information hierarchy, visual structure, copy cleanup, and export-ready design.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "AI Infographic Concept Variation", description: "AI-assisted infographic concept or layout variation refined by an expert for readability and brand alignment.", category: "Presentation & Documents", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Sales Sheets (per page)", description: "One-page sales sheet or product/service explainer with copy structure, design, and export-ready files.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Reports (per page)", description: "Designed report page with cleaned-up content, visual hierarchy, tables/charts where needed, and final export.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
+    { name: "Print Collateral: New Design", description: "New print design for flyers, business cards, posters, signage, stationery, certificates, billboards, covers, T-shirts, inserts, or similar collateral.", category: "Print Media", roleName: "Manager", avgHours: 4.0, includedRevisions: 2, tag: null, methodTag: "ARTISAN" },
+    { name: "Print Collateral: Variation", description: "Variation of an approved print collateral design for another format, size, language, audience, or offer.", category: "Print Media", roleName: "Manager", avgHours: 2.0, includedRevisions: 1, tag: null, methodTag: "HYBRID" },
+    { name: "AI Print Collateral Variation", description: "AI-assisted print collateral variation from an approved design direction, expert-checked for layout and production readiness.", category: "Print Media", roleName: "Executive", avgHours: 2.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
+    { name: "Changes to Print Graphics (after 10 days)", description: "Post-delivery changes to print graphics requested after the included delivery window has passed.", category: "Revisions", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: null, methodTag: "HYBRID" },
+    { name: "Strategy: Quarterly Plan (system task)", description: "Quarterly roadmap and monthly review.", category: "Strategy (Core)", roleName: "Manager", avgHours: 16.0, methodTag: "ARTISAN" },
+    { name: "Website Maintenance (system task)", description: "Uptime, backups, security patches, performance.", category: "Tech (Core)", roleName: "Manager", avgHours: 10.0, methodTag: "AI POWERED" },
+    { name: "Monthly Content System (system task)", description: "One pillar piece plus derivative posts and emails for the month.", category: "Content (Core)", roleName: "Manager", avgHours: 14.0, methodTag: "HYBRID" },
   ];
   let i = 0;
   for (const s of data) {
@@ -175,8 +193,9 @@ function seedServices(): void {
       category: s.category,
       defaultRoleId: role.id,
       avgHours: s.avgHours,
-      includedRevisions: 2,
+      includedRevisions: s.includedRevisions ?? 2,
       tag: s.tag ?? null,
+      methodTag: s.methodTag ?? null,
       creditCost: cost,
       creditCostOverride: false,
       isActive: true,
@@ -464,6 +483,7 @@ export const mockStore: DataStore = {
     if (filters?.categories?.length) out = out.filter((s) => filters.categories!.includes(s.category));
     if (filters?.roleIds?.length) out = out.filter((s) => filters.roleIds!.includes(s.defaultRoleId));
     if (filters?.tags?.length) out = out.filter((s) => filters.tags!.includes(s.tag));
+    if (filters?.methodTags?.length) out = out.filter((s) => filters.methodTags!.includes(s.methodTag));
     if (filters?.activeOnly) out = out.filter((s) => s.isActive);
     return out.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   },
@@ -480,6 +500,7 @@ export const mockStore: DataStore = {
     const id = input.id ?? uid();
     const existing = services.find((s) => s.id === id);
     const tag = input.tag ?? null;
+    const methodTag = input.methodTag ?? null;
     const isActive = tag === "DISCONTINUED" ? false : input.isActive ?? true;
 
     const next: Service = existing
@@ -492,6 +513,7 @@ export const mockStore: DataStore = {
           avgHours: input.avgHours,
           includedRevisions: input.includedRevisions ?? existing.includedRevisions,
           tag,
+          methodTag,
           creditCost: cost,
           creditCostOverride: !!input.creditCostOverride,
           creditCostOverrideReason: input.creditCostOverrideReason,
@@ -508,6 +530,7 @@ export const mockStore: DataStore = {
           avgHours: input.avgHours,
           includedRevisions: input.includedRevisions ?? 2,
           tag,
+          methodTag,
           creditCost: cost,
           creditCostOverride: !!input.creditCostOverride,
           creditCostOverrideReason: input.creditCostOverrideReason,

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { autoCreditCost, formulaBreakdown } from "@/lib/credits";
+import { METHOD_TAG_OPTIONS, getMethodTagMeta } from "@/lib/method-tags";
 import type { Role, Service, Settings } from "@/types";
 
 export function ServiceForm({
@@ -22,6 +24,7 @@ export function ServiceForm({
   const [avgHours, setAvgHours] = useState<number>(initial?.avgHours ?? 1);
   const [includedRevisions, setIncludedRevisions] = useState<number>(initial?.includedRevisions ?? 2);
   const [tag, setTag] = useState<string>(initial?.tag ?? "");
+  const [methodTag, setMethodTag] = useState<string>(initial?.methodTag ?? "");
   const [override, setOverride] = useState<boolean>(!!initial?.creditCostOverride);
   const [creditCost, setCreditCost] = useState<number>(initial?.creditCost ?? 0);
   const [overrideReason, setOverrideReason] = useState(initial?.creditCostOverrideReason ?? "");
@@ -29,6 +32,7 @@ export function ServiceForm({
   const selectedRole = roles.find((r) => r.id === defaultRoleId);
   const auto = useMemo(() => (selectedRole ? autoCreditCost(avgHours, selectedRole.multiplier, settings) : 0), [avgHours, selectedRole, settings]);
   const formula = useMemo(() => (selectedRole ? formulaBreakdown(avgHours, selectedRole.multiplier, settings) : ""), [avgHours, selectedRole, settings]);
+  const selectedMethod = getMethodTagMeta(methodTag as Service["methodTag"]);
 
   const effectiveCost = override ? creditCost : auto;
 
@@ -88,6 +92,23 @@ export function ServiceForm({
           {tag === "DISCONTINUED" ? <p className="help">Discontinued services are hidden from new task creation but kept for history. Active will be set to off.</p> : null}
         </div>
 
+        <div>
+          <label className="label">Delivery method</label>
+          <div className="flex gap-2 flex-wrap">
+            <label className={`chip cursor-pointer ${methodTag === "" ? "chip-purple" : ""}`}>
+              <input type="radio" name="methodTag" value="" checked={methodTag === ""} onChange={(e) => setMethodTag(e.target.value)} className="hidden" />
+              Not specified
+            </label>
+            {METHOD_TAG_OPTIONS.map((option) => (
+              <label key={option.value} className={`chip cursor-pointer ${methodTag === option.value ? "chip-purple" : ""}`}>
+                <input type="radio" name="methodTag" value={option.value} checked={methodTag === option.value} onChange={(e) => setMethodTag(e.target.value)} className="hidden" />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <p className="help">{selectedMethod?.description ?? "Use this to frame the service around speed, quality control, and expert involvement."}</p>
+        </div>
+
         <div className="space-y-2 border-t border-[var(--color-line)] pt-4">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="creditCostOverride" checked={override} onChange={(e) => setOverride(e.target.checked)} />
@@ -110,7 +131,7 @@ export function ServiceForm({
         <div className="flex gap-3 pt-2">
           <button className="btn btn-primary" type="submit" name="next" value="back">Save</button>
           <button className="btn btn-ghost" type="submit" name="next" value="new">Save & New</button>
-          <a className="btn btn-ghost" href="/catalog/services">Cancel</a>
+          <Link className="btn btn-ghost" href="/catalog/services">Cancel</Link>
         </div>
       </div>
 

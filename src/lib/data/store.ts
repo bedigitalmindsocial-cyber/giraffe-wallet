@@ -29,6 +29,8 @@ import type {
   User,
   UtilizationReport,
 } from "@/types";
+import { mockStore } from "./mock";
+import { supabaseStore } from "./supabase";
 
 export interface DataStore {
   // Catalog: roles
@@ -101,12 +103,17 @@ export function getStore(): DataStore {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (supabaseUrl && serviceKey) {
-    const mod = require("./supabase") as typeof import("./supabase");
-    _store = mod.supabaseStore;
+    _store = supabaseStore;
     if (typeof console !== "undefined") console.log("[wallet] Using Supabase store (real persistence)");
   } else {
-    const mod = require("./mock") as typeof import("./mock");
-    _store = mod.mockStore;
+    const isProductionRuntime = process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build";
+    if (isProductionRuntime) {
+      throw new Error(
+        "Giraffe Wallet is running in production without Supabase persistence. " +
+          "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY before deploying.",
+      );
+    }
+    _store = mockStore;
     if (typeof console !== "undefined") {
       console.log(
         "[wallet] Using in-memory mock store (no persistence). " +

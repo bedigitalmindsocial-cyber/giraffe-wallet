@@ -3,17 +3,23 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { Chip } from "@/components/ui/Chip";
 import { LinkButton } from "@/components/ui/Button";
+import { MethodTagChip } from "@/components/catalog/MethodTagChip";
+import { METHOD_TAG_OPTIONS } from "@/lib/method-tags";
+import type { ServiceMethodTag, ServiceTag } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function ServicesList({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; tag?: string; active?: string }> }) {
+export default async function ServicesList({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; tag?: string; method?: string; active?: string }> }) {
   const sp = await searchParams;
   const store = getStore();
+  const serviceTag: ServiceTag | undefined = sp.tag ? (sp.tag as ServiceTag) : undefined;
+  const methodTag: ServiceMethodTag | undefined = sp.method ? (sp.method as ServiceMethodTag) : undefined;
   const [services, roles] = await Promise.all([
     store.getServices({
       search: sp.q,
       categories: sp.cat ? [sp.cat] : undefined,
-      tags: sp.tag ? [sp.tag as any] : undefined,
+      tags: serviceTag ? [serviceTag] : undefined,
+      methodTags: methodTag ? [methodTag] : undefined,
       activeOnly: sp.active === "1",
     }),
     store.getRoles(),
@@ -54,6 +60,13 @@ export default async function ServicesList({ searchParams }: { searchParams: Pro
             <option value="DISCONTINUED">DISCONTINUED</option>
           </select>
         </div>
+        <div className="min-w-[220px]">
+          <label className="label">Delivery method</label>
+          <select className="select" name="method" defaultValue={sp.method ?? ""}>
+            <option value="">All methods</option>
+            {METHOD_TAG_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </div>
         <label className="flex items-center gap-2 mb-1 text-sm">
           <input type="checkbox" name="active" value="1" defaultChecked={sp.active === "1"} /> Active only
         </label>
@@ -69,6 +82,7 @@ export default async function ServicesList({ searchParams }: { searchParams: Pro
               <th>Default role</th>
               <th className="text-right">Avg hours</th>
               <th className="text-right">Credit cost</th>
+              <th>Method</th>
               <th>Tag</th>
               <th>Active</th>
               <th></th>
@@ -92,13 +106,14 @@ export default async function ServicesList({ searchParams }: { searchParams: Pro
                     {s.creditCost}
                     {s.creditCostOverride ? <Chip variant="warning" className="ml-2">↑ override</Chip> : null}
                   </td>
+                  <td><MethodTagChip methodTag={s.methodTag} compact /></td>
                   <td>{s.tag ? <Chip variant={s.tag === "DISCONTINUED" ? "danger" : "purple"}>{s.tag}</Chip> : null}</td>
                   <td>{s.isActive ? <Chip variant="success">active</Chip> : <Chip variant="danger">inactive</Chip>}</td>
                   <td className="text-right"><Link className="text-sm text-[var(--color-purple)] hover:underline" href={`/catalog/services/${s.id}`}>Edit</Link></td>
                 </tr>
               );
             })}
-            {services.length === 0 ? <tr><td colSpan={8} className="text-center text-[var(--color-muted)] py-8">No services match the current filter.</td></tr> : null}
+            {services.length === 0 ? <tr><td colSpan={9} className="text-center text-[var(--color-muted)] py-8">No services match the current filter.</td></tr> : null}
           </tbody>
         </table>
       </div>

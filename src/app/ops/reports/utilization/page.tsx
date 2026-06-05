@@ -20,7 +20,7 @@ export default async function UtilizationReport() {
       <div className="mb-6">
         <div className="eyebrow mb-1">Reports</div>
         <h1 className="display text-4xl">Utilization</h1>
-        <p className="text-[var(--color-muted)] mt-1">Are clients spending what they should at this point in the quarter? Catch underuse early so they don't lose credits.</p>
+        <p className="text-[var(--color-muted)] mt-1">Are clients spending what they should at this point in the quarter? Catch underuse early so they do not lose credits.</p>
       </div>
 
       <Card className="mb-6">

@@ -4,6 +4,8 @@ import { getStaffSession, staffActor } from "@/lib/auth/staff-auth";
 import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewClient() {
   const session = await getStaffSession();
   if (!session) redirect("/ops/login");
@@ -67,7 +69,7 @@ export default async function NewClient() {
         </div>
         <div className="flex gap-3">
           <button className="btn btn-primary" type="submit">Create client</button>
-          <a className="btn btn-ghost" href="/ops/clients">Cancel</a>
+          <Link className="btn btn-ghost" href="/ops/clients">Cancel</Link>
         </div>
       </form>
     </AppShell>

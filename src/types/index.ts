@@ -41,6 +41,7 @@ export interface SettingsInput {
 }
 
 export type ServiceTag = "NEW" | "POPULAR" | "PROMO" | "DISCONTINUED" | null;
+export type ServiceMethodTag = "AI POWERED" | "HYBRID" | "ARTISAN" | null;
 
 export interface Service {
   id: string;
@@ -51,6 +52,7 @@ export interface Service {
   avgHours: number;
   includedRevisions: number;
   tag: ServiceTag;
+  methodTag: ServiceMethodTag;
   creditCost: number;
   creditCostOverride: boolean;
   creditCostOverrideReason?: string;
@@ -69,6 +71,7 @@ export interface ServiceInput {
   avgHours: number;
   includedRevisions?: number;
   tag?: ServiceTag;
+  methodTag?: ServiceMethodTag;
   creditCost?: number;
   creditCostOverride?: boolean;
   creditCostOverrideReason?: string;
@@ -81,6 +84,7 @@ export interface ServiceFilters {
   categories?: string[];
   roleIds?: string[];
   tags?: ServiceTag[];
+  methodTags?: ServiceMethodTag[];
   activeOnly?: boolean;
 }
 

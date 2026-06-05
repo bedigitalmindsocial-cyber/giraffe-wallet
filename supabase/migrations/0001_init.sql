@@ -18,7 +18,7 @@ create table if not exists roles (
 -- We pin the row to a known UUID so application code can always upsert it.
 create table if not exists settings (
   id uuid primary key default '00000000-0000-0000-0000-000000000001',
-  base_hourly_rate numeric(10,2) not null default 500 check (base_hourly_rate > 0),
+  base_hourly_rate numeric(10,2) not null default 125 check (base_hourly_rate > 0),
   markup_multiplier numeric(4,2) not null default 2.5 check (markup_multiplier >= 1),
   credit_value numeric(10,2) not null default 500 check (credit_value > 0),
   updated_at timestamptz not null default now(),
@@ -35,6 +35,7 @@ create table if not exists services (
   avg_hours numeric(5,2) not null check (avg_hours > 0),
   included_revisions int not null default 2 check (included_revisions >= 0),
   tag text check (tag in ('NEW','POPULAR','PROMO','DISCONTINUED')),
+  method_tag text check (method_tag in ('AI POWERED','HYBRID','ARTISAN')),
   credit_cost int not null check (credit_cost > 0),
   credit_cost_override boolean not null default false,
   credit_cost_override_reason text,
@@ -266,7 +267,7 @@ insert into roles (name, multiplier) values
 on conflict (name) do nothing;
 
 insert into settings (id, base_hourly_rate, markup_multiplier, credit_value)
-values ('00000000-0000-0000-0000-000000000001', 500, 2.5, 500)
+values ('00000000-0000-0000-0000-000000000001', 125, 2.5, 500)
 on conflict (id) do nothing;
 
 insert into packages (name, quarterly_fee_inr, total_credits, core_credits, flex_credits, sort_order)
@@ -277,31 +278,31 @@ values
 on conflict (name) do nothing;
 
 -- Seed services. Cost is auto-calculated via the same formula used in app code.
-insert into services (name, description, category, default_role_id, avg_hours, credit_cost, tag, sort_order)
+insert into services (name, description, category, default_role_id, avg_hours, credit_cost, tag, method_tag, sort_order)
 select
   d.name, d.description, d.category, r.id, d.avg_hours,
-  greatest(1, ceil((d.avg_hours * r.multiplier * 500 * 2.5) / 500))::int as credit_cost,
-  d.tag, d.sort_order
+  greatest(1, ceil((d.avg_hours * r.multiplier * 125 * 2.5) / 500))::int as credit_cost,
+  d.tag, d.method_tag, d.sort_order
 from (
   values
-    ('Social post (single)', 'One static post with caption, hashtags, and platform sizing.', 'Social', 'Executive', 1.5, 'POPULAR', 1),
-    ('Social carousel (5 slides)', 'Multi-slide post with copy and design.', 'Social', 'Executive', 4.0, null, 2),
-    ('Blog graphic', 'Header graphic for an article. Two revisions included.', 'Design', 'Executive', 3.0, null, 3),
-    ('Web page (single)', 'One landing page or content page, copy plus design.', 'Design', 'Manager', 8.0, null, 4),
-    ('Long-form article', '1200 to 1500 word article with research and edit pass.', 'Content', 'Manager', 8.0, null, 5),
-    ('Whitepaper or case study', 'Long-form research piece with structure and design.', 'Content', 'Senior Manager', 16.0, null, 6),
-    ('Pitch deck', '12 to 15 slide deck with structure, copy, and design.', 'Sales Enablement', 'Senior Manager', 12.0, null, 7),
-    ('Brand strategy doc', 'Positioning, messaging architecture, brand voice.', 'Strategy', 'Senior Partner', 15.0, 'NEW', 8),
-    ('Press article', 'PR-ready article for placement, including pitch note.', 'PR', 'Manager', 6.0, null, 9),
-    ('Email campaign', 'One email with copy, design, and segmentation note.', 'Email', 'Executive', 3.0, null, 10),
-    ('Video ad (15s to 30s)', 'Script, edit, and one revision.', 'Video', 'Manager', 12.0, null, 11),
-    ('Photography (half day)', 'On-site product or environment shoot.', 'Production', 'Manager', 5.0, null, 12),
-    ('Infographic', 'Single static infographic with research and design.', 'Design', 'Executive', 4.0, null, 13),
-    ('SEO audit', 'Technical and content audit with prioritized action list.', 'SEO', 'Manager', 6.0, null, 14),
-    ('Strategy: Quarterly Plan (system task)', 'Quarterly roadmap and monthly review.', 'Strategy (Core)', 'Manager', 16.0, null, 15),
-    ('Website Maintenance (system task)', 'Uptime, backups, security patches, performance.', 'Tech (Core)', 'Manager', 10.0, null, 16),
-    ('Monthly Content System (system task)', 'One pillar piece plus derivative posts and emails for the month.', 'Content (Core)', 'Manager', 14.0, null, 17)
-) as d(name, description, category, role_name, avg_hours, tag, sort_order)
+    ('Social post (single)', 'One static post with caption, hashtags, and platform sizing.', 'Social', 'Executive', 1.5, 'POPULAR', 'AI POWERED', 1),
+    ('Social carousel (5 slides)', 'Multi-slide post with copy and design.', 'Social', 'Executive', 4.0, null, 'HYBRID', 2),
+    ('Blog graphic', 'Header graphic for an article. Two revisions included.', 'Design', 'Executive', 3.0, null, 'HYBRID', 3),
+    ('Web page (single)', 'One landing page or content page, copy plus design.', 'Design', 'Manager', 8.0, null, 'HYBRID', 4),
+    ('Long-form article', '1200 to 1500 word article with research and edit pass.', 'Content', 'Manager', 8.0, null, 'HYBRID', 5),
+    ('Whitepaper or case study', 'Long-form research piece with structure and design.', 'Content', 'Senior Manager', 16.0, null, 'ARTISAN', 6),
+    ('Pitch deck', '12 to 15 slide deck with structure, copy, and design.', 'Sales Enablement', 'Senior Manager', 12.0, null, 'ARTISAN', 7),
+    ('Brand strategy doc', 'Positioning, messaging architecture, brand voice.', 'Strategy', 'Senior Partner', 15.0, 'NEW', 'ARTISAN', 8),
+    ('Press article', 'PR-ready article for placement, including pitch note.', 'PR', 'Manager', 6.0, null, 'ARTISAN', 9),
+    ('Email campaign', 'One email with copy, design, and segmentation note.', 'Email', 'Executive', 3.0, null, 'AI POWERED', 10),
+    ('Video ad (15s to 30s)', 'Script, edit, and one revision.', 'Video', 'Manager', 12.0, null, 'HYBRID', 11),
+    ('Photography (half day)', 'On-site product or environment shoot.', 'Production', 'Manager', 5.0, null, 'ARTISAN', 12),
+    ('Infographic', 'Single static infographic with research and design.', 'Design', 'Executive', 4.0, null, 'HYBRID', 13),
+    ('SEO audit', 'Technical and content audit with prioritized action list.', 'SEO', 'Manager', 6.0, null, 'HYBRID', 14),
+    ('Strategy: Quarterly Plan (system task)', 'Quarterly roadmap and monthly review.', 'Strategy (Core)', 'Manager', 16.0, null, 'ARTISAN', 15),
+    ('Website Maintenance (system task)', 'Uptime, backups, security patches, performance.', 'Tech (Core)', 'Manager', 10.0, null, 'AI POWERED', 16),
+    ('Monthly Content System (system task)', 'One pillar piece plus derivative posts and emails for the month.', 'Content (Core)', 'Manager', 14.0, null, 'HYBRID', 17)
+) as d(name, description, category, role_name, avg_hours, tag, method_tag, sort_order)
 join roles r on r.name = d.role_name
 on conflict (name) do nothing;
 

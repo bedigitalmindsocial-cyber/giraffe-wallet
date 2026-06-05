@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MethodTagChip } from "@/components/catalog/MethodTagChip";
+import { getMethodTagMeta } from "@/lib/method-tags";
 import type { EngagementBalance, Service } from "@/types";
 
 export function TaskNewForm({
@@ -37,7 +39,10 @@ export function TaskNewForm({
         <select className="select" name="serviceId" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
           {grouped.map(([cat, arr]) => (
             <optgroup key={cat} label={cat}>
-              {arr.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.creditCost} credits ({s.avgHours}h)</option>)}
+              {arr.map((s) => {
+                const method = getMethodTagMeta(s.methodTag)?.compactLabel;
+                return <option key={s.id} value={s.id}>{s.name} · {s.creditCost} credits ({s.avgHours}h{method ? ` · ${method}` : ""})</option>;
+              })}
             </optgroup>
           ))}
         </select>
@@ -48,6 +53,7 @@ export function TaskNewForm({
           <div className="eyebrow mb-1">Locked at quote</div>
           <div className="mono text-xl">{cost} credits</div>
           <div className="text-xs text-[var(--color-muted)] mt-1">{svc?.avgHours}h estimated</div>
+          {svc?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={svc.methodTag} compact /></div> : null}
         </div>
         <div className="rounded p-3 bg-[var(--color-paper-warm)] text-sm">
           <div className="eyebrow mb-1">Bucket</div>
@@ -71,6 +77,13 @@ export function TaskNewForm({
         <label className="label">Brief</label>
         <textarea className="textarea" name="brief" rows={4} required placeholder="Audience, objective, must-have references, deadline if any." />
       </div>
+
+      {svc?.methodTag ? (
+        <div className="rounded p-3 bg-[var(--color-paper-warm)] text-sm">
+          <div className="eyebrow mb-1">{getMethodTagMeta(svc.methodTag)?.label}</div>
+          <p className="text-[var(--color-muted)]">{getMethodTagMeta(svc.methodTag)?.description}</p>
+        </div>
+      ) : null}
 
       <div className={`rounded p-3 text-sm ${after < 0 ? "bg-[#F8E0DD] text-[var(--color-danger)]" : "bg-[#E6F3EC] text-[var(--color-success)]"}`}>
         After this task, {bucket} remaining will be <span className="mono">{after}</span> credits.

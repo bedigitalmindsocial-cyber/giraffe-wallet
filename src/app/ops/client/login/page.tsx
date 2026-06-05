@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { clientLogin, getClientSession } from "@/lib/auth/client-session";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClientLoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; slug?: string; pre?: string }> }) {
   const sp = await searchParams;
   const existing = await getClientSession();

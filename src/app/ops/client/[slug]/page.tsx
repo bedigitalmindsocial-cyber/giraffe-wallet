@@ -4,6 +4,7 @@ import { getStore } from "@/lib/data/store";
 import { AppShell } from "@/components/ui/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { MethodTagChip } from "@/components/catalog/MethodTagChip";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { formatCredits, daysBetween } from "@/lib/utils";
 import type { Actor } from "@/types";
@@ -104,6 +105,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                     <div>
                       <h3 className="display text-xl">{t.title}</h3>
                       <div className="text-xs text-[var(--color-muted)] mt-1">{svc?.name ?? ""}</div>
+                      {svc?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={svc.methodTag} compact /></div> : null}
                     </div>
                     <Chip variant="purple">{t.creditCostLocked} credits</Chip>
                   </div>
@@ -140,6 +142,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                   <Chip variant="purple">{t.status.replace("_", " ")}</Chip>
                 </div>
                 <div className="text-xs text-[var(--color-muted)] mt-1">{services.find((s) => s.id === t.serviceId)?.name} · {t.creditCostLocked} credits</div>
+                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? null} compact /></div> : null}
               </Card>
             ))}
           </div>
@@ -157,6 +160,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                   <Chip variant="warning">{t.status.replace("_", " ")}</Chip>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{t.brief}</p>
+                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-3"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? null} compact /></div> : null}
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <form action={approve}>
                     <input type="hidden" name="taskId" value={t.id} />

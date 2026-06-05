@@ -42,7 +42,7 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
       <div className="mb-6">
         <div className="eyebrow mb-1">Catalog</div>
         <h1 className="display text-4xl">Roles</h1>
-        <p className="text-[var(--color-muted)] mt-1">A role's multiplier scales the base hourly rate. Used in every credit cost calculation.</p>
+        <p className="text-[var(--color-muted)] mt-1">A role&apos;s multiplier scales the base hourly rate. Used in every credit cost calculation.</p>
         {sp.error ? <p className="error mt-3">{sp.error}</p> : null}
       </div>
 
