@@ -142,7 +142,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                   <Chip variant="purple">{t.status.replace("_", " ")}</Chip>
                 </div>
                 <div className="text-xs text-[var(--color-muted)] mt-1">{services.find((s) => s.id === t.serviceId)?.name} · {t.creditCostLocked} credits</div>
-                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? null} compact /></div> : null}
+                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? "HYBRID"} compact /></div> : null}
               </Card>
             ))}
           </div>
@@ -160,7 +160,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                   <Chip variant="warning">{t.status.replace("_", " ")}</Chip>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{t.brief}</p>
-                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-3"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? null} compact /></div> : null}
+                {services.find((s) => s.id === t.serviceId)?.methodTag ? <div className="mt-3"><MethodTagChip methodTag={services.find((s) => s.id === t.serviceId)?.methodTag ?? "HYBRID"} compact /></div> : null}
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <form action={approve}>
                     <input type="hidden" name="taskId" value={t.id} />

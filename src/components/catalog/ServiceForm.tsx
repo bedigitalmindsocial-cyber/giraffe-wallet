@@ -2,39 +2,38 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { autoCreditCost, formulaBreakdown } from "@/lib/credits";
+import { computeCreditCost } from "@/lib/credits";
 import { METHOD_TAG_OPTIONS, getMethodTagMeta } from "@/lib/method-tags";
-import type { Role, Service, Settings } from "@/types";
+import type { Service, ServicePricingModel } from "@/types";
 
 export function ServiceForm({
   initial,
   roles,
-  settings,
   action,
 }: {
   initial?: Partial<Service>;
-  roles: Role[];
-  settings: Settings;
+  roles: { id: string; name: string; multiplier: number }[];
   action: (formData: FormData) => Promise<void> | void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
   const [defaultRoleId, setDefaultRoleId] = useState(initial?.defaultRoleId ?? roles[0]?.id ?? "");
-  const [avgHours, setAvgHours] = useState<number>(initial?.avgHours ?? 1);
-  const [includedRevisions, setIncludedRevisions] = useState<number>(initial?.includedRevisions ?? 2);
-  const [tag, setTag] = useState<string>(initial?.tag ?? "");
-  const [methodTag, setMethodTag] = useState<string>(initial?.methodTag ?? "");
-  const [override, setOverride] = useState<boolean>(!!initial?.creditCostOverride);
-  const [creditCost, setCreditCost] = useState<number>(initial?.creditCost ?? 0);
-  const [overrideReason, setOverrideReason] = useState(initial?.creditCostOverrideReason ?? "");
+  const [pricingModel, setPricingModel] = useState<ServicePricingModel>(initial?.pricingModel ?? "flat");
+  const [creditsPerUnit, setCreditsPerUnit] = useState<number>(initial?.creditsPerUnit ?? 0);
+  const [unitLabel, setUnitLabel] = useState(initial?.unitLabel ?? "unit");
+  const [includedRevisionsPerUnit, setIncludedRevisionsPerUnit] = useState<number>(initial?.includedRevisionsPerUnit ?? 0.5);
+  const [lifecycleTag, setLifecycleTag] = useState<string>(initial?.lifecycleTag ?? "");
+  const [methodTag, setMethodTag] = useState<string>(initial?.methodTag ?? "HYBRID");
 
-  const selectedRole = roles.find((r) => r.id === defaultRoleId);
-  const auto = useMemo(() => (selectedRole ? autoCreditCost(avgHours, selectedRole.multiplier, settings) : 0), [avgHours, selectedRole, settings]);
-  const formula = useMemo(() => (selectedRole ? formulaBreakdown(avgHours, selectedRole.multiplier, settings) : ""), [avgHours, selectedRole, settings]);
+  const previewCost = useMemo(() => computeCreditCost({
+    pricingModel,
+    creditsPerUnit,
+    tierThreshold: initial?.tierThreshold,
+    tierCreditsPerUnit: initial?.tierCreditsPerUnit,
+  }, 1), [pricingModel, creditsPerUnit, initial?.tierThreshold, initial?.tierCreditsPerUnit]);
+
   const selectedMethod = getMethodTagMeta(methodTag as Service["methodTag"]);
-
-  const effectiveCost = override ? creditCost : auto;
 
   return (
     <form action={action} className="grid gap-6 md:grid-cols-3">
@@ -64,41 +63,55 @@ export function ServiceForm({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Average hours</label>
-            <input className="input mono" type="number" step="0.25" min="0.25" name="avgHours" value={avgHours} onChange={(e) => setAvgHours(parseFloat(e.target.value || "0"))} />
+            <label className="label">Pricing model</label>
+            <select className="select" name="pricingModel" value={pricingModel} onChange={(e) => setPricingModel(e.target.value as ServicePricingModel)}>
+              <option value="flat">Flat (fixed cost)</option>
+              <option value="per_page">Per page</option>
+              <option value="per_100_words">Per 100 words</option>
+              <option value="per_design">Per design</option>
+              <option value="per_episode">Per episode</option>
+            </select>
           </div>
           <div>
-            <label className="label">Included revisions</label>
-            <input className="input mono" type="number" min="0" name="includedRevisions" value={includedRevisions} onChange={(e) => setIncludedRevisions(parseInt(e.target.value || "0"))} />
+            <label className="label">Unit label</label>
+            <input className="input" name="unitLabel" value={unitLabel} onChange={(e) => setUnitLabel(e.target.value)} placeholder="unit, page, episode..." />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Credits per unit</label>
+            <input className="input mono" type="number" step="1" min="0" name="creditsPerUnit" value={creditsPerUnit} onChange={(e) => setCreditsPerUnit(parseFloat(e.target.value || "0"))} />
+          </div>
+          <div>
+            <label className="label">Included revisions per unit</label>
+            <input className="input mono" type="number" step="0.5" min="0" name="includedRevisionsPerUnit" value={includedRevisionsPerUnit} onChange={(e) => setIncludedRevisionsPerUnit(parseFloat(e.target.value || "0"))} />
           </div>
         </div>
 
         <div>
-          <label className="label">Tag</label>
+          <label className="label">Lifecycle tag</label>
           <div className="flex gap-2 flex-wrap">
             {[
               { v: "", l: "None" },
               { v: "NEW", l: "NEW" },
               { v: "POPULAR", l: "POPULAR" },
               { v: "PROMO", l: "PROMO" },
+              { v: "LIMITED", l: "LIMITED" },
               { v: "DISCONTINUED", l: "DISCONTINUED" },
             ].map((t) => (
-              <label key={t.v} className={`chip cursor-pointer ${tag === t.v ? "chip-purple" : ""}`}>
-                <input type="radio" name="tag" value={t.v} checked={tag === t.v} onChange={(e) => setTag(e.target.value)} className="hidden" />
+              <label key={t.v} className={`chip cursor-pointer ${lifecycleTag === t.v ? "chip-purple" : ""}`}>
+                <input type="radio" name="lifecycleTag" value={t.v} checked={lifecycleTag === t.v} onChange={(e) => setLifecycleTag(e.target.value)} className="hidden" />
                 {t.l}
               </label>
             ))}
           </div>
-          {tag === "DISCONTINUED" ? <p className="help">Discontinued services are hidden from new task creation but kept for history. Active will be set to off.</p> : null}
+          {lifecycleTag === "DISCONTINUED" ? <p className="help">Discontinued services are hidden from new task creation but kept for history. Active will be set to off.</p> : null}
         </div>
 
         <div>
           <label className="label">Delivery method</label>
           <div className="flex gap-2 flex-wrap">
-            <label className={`chip cursor-pointer ${methodTag === "" ? "chip-purple" : ""}`}>
-              <input type="radio" name="methodTag" value="" checked={methodTag === ""} onChange={(e) => setMethodTag(e.target.value)} className="hidden" />
-              Not specified
-            </label>
             {METHOD_TAG_OPTIONS.map((option) => (
               <label key={option.value} className={`chip cursor-pointer ${methodTag === option.value ? "chip-purple" : ""}`}>
                 <input type="radio" name="methodTag" value={option.value} checked={methodTag === option.value} onChange={(e) => setMethodTag(e.target.value)} className="hidden" />
@@ -107,25 +120,6 @@ export function ServiceForm({
             ))}
           </div>
           <p className="help">{selectedMethod?.description ?? "Use this to frame the service around speed, quality control, and expert involvement."}</p>
-        </div>
-
-        <div className="space-y-2 border-t border-[var(--color-line)] pt-4">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="creditCostOverride" checked={override} onChange={(e) => setOverride(e.target.checked)} />
-            Override the auto-calculated credit cost
-          </label>
-          {override ? (
-            <>
-              <div>
-                <label className="label">Credit cost (override)</label>
-                <input className="input mono" type="number" min="1" name="creditCost" value={creditCost} onChange={(e) => setCreditCost(parseInt(e.target.value || "0"))} />
-              </div>
-              <div>
-                <label className="label">Override reason</label>
-                <textarea className="textarea" name="creditCostOverrideReason" required value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder="Why does this service deviate from the formula?" />
-              </div>
-            </>
-          ) : null}
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -137,25 +131,11 @@ export function ServiceForm({
 
       <aside className="space-y-4">
         <div className="card p-4 bg-[var(--color-paper-warm)]">
-          <div className="eyebrow mb-2">Live preview</div>
-          <div className="mono text-3xl text-[var(--color-purple-dark)]">{effectiveCost} credits</div>
-          {!override ? (
-            <p className="help mt-2">Auto-calculated: {formula}</p>
-          ) : (
-            <p className="help mt-2">Override active. Auto would be {auto} credits ({formula}).</p>
-          )}
-          <div className="mt-3 text-xs text-[var(--color-muted)]">
-            Equivalent revenue: <span className="mono">₹{(effectiveCost * settings.creditValue).toLocaleString("en-IN")}</span>
+          <div className="eyebrow mb-2">Live preview (qty 1)</div>
+          <div className="mono text-3xl text-[var(--color-purple-dark)]">{previewCost} credits</div>
+          <div className="mt-2 text-xs text-[var(--color-muted)]">
+            Model: <span className="mono">{pricingModel}</span> · {creditsPerUnit} cr/unit
           </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="eyebrow mb-2">Pricing settings</div>
-          <ul className="text-sm space-y-1">
-            <li>Base rate: <span className="mono">₹{settings.baseHourlyRate}/h</span></li>
-            <li>Markup: <span className="mono">{settings.markupMultiplier}×</span></li>
-            <li>Credit value: <span className="mono">₹{settings.creditValue}</span></li>
-          </ul>
         </div>
       </aside>
     </form>

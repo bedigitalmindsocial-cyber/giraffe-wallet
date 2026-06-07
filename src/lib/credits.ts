@@ -1,23 +1,18 @@
-// Credit cost calculation. Single source of truth for the formula.
-// auto = ceil(avg_hours × multiplier × baseHourlyRate × markupMultiplier / creditValue)
+// Credit cost calculation. Single source of truth for the v2 pricing formula.
 
-import type { Settings } from "@/types";
+import type { Service } from "@/types";
 
-export function autoCreditCost(
-  avgHours: number,
-  multiplier: number,
-  s: Pick<Settings, "baseHourlyRate" | "markupMultiplier" | "creditValue">,
+export function computeCreditCost(
+  service: Pick<Service, 'pricingModel' | 'creditsPerUnit' | 'tierThreshold' | 'tierCreditsPerUnit'>,
+  quantity: number,
 ): number {
-  const rupees = avgHours * multiplier * s.baseHourlyRate * s.markupMultiplier;
-  return Math.max(1, Math.ceil(rupees / s.creditValue));
-}
-
-export function formulaBreakdown(
-  avgHours: number,
-  multiplier: number,
-  s: Pick<Settings, "baseHourlyRate" | "markupMultiplier" | "creditValue">,
-): string {
-  return `${avgHours}h × ${multiplier} × ₹${s.baseHourlyRate} × ${s.markupMultiplier} ÷ ₹${s.creditValue}`;
+  if (service.pricingModel === 'flat') return service.creditsPerUnit;
+  if (service.tierThreshold && quantity > service.tierThreshold) {
+    const base = service.tierThreshold * service.creditsPerUnit;
+    const extra = (quantity - service.tierThreshold) * (service.tierCreditsPerUnit ?? service.creditsPerUnit);
+    return Math.ceil(base + extra);
+  }
+  return Math.ceil(quantity * service.creditsPerUnit);
 }
 
 // Internal cost in INR for a given hours mix. Used by efficiency reports.

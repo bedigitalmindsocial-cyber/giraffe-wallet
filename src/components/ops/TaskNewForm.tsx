@@ -18,7 +18,7 @@ export function TaskNewForm({
   const [bucket, setBucket] = useState<"core" | "flex">("flex");
   const svc = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
   const isCoreCategory = !!svc?.category.toLowerCase().includes("core");
-  const cost = svc?.creditCost ?? 0;
+  const cost = svc?.creditsPerUnit ?? 0;
   const remaining = bucket === "flex" ? balance.flexCreditsRemaining : balance.coreCreditsRemaining;
   const after = remaining - cost;
 
@@ -41,7 +41,7 @@ export function TaskNewForm({
             <optgroup key={cat} label={cat}>
               {arr.map((s) => {
                 const method = getMethodTagMeta(s.methodTag)?.compactLabel;
-                return <option key={s.id} value={s.id}>{s.name} · {s.creditCost} credits ({s.avgHours}h{method ? ` · ${method}` : ""})</option>;
+                return <option key={s.id} value={s.id}>{s.name} · {s.creditsPerUnit} credits{method ? ` · ${method}` : ""}</option>;
               })}
             </optgroup>
           ))}
@@ -52,7 +52,7 @@ export function TaskNewForm({
         <div className="rounded p-3 bg-[var(--color-paper-warm)] text-sm">
           <div className="eyebrow mb-1">Locked at quote</div>
           <div className="mono text-xl">{cost} credits</div>
-          <div className="text-xs text-[var(--color-muted)] mt-1">{svc?.avgHours}h estimated</div>
+          <div className="text-xs text-[var(--color-muted)] mt-1">{svc?.internalAvgHours ? `${svc.internalAvgHours}h estimated` : svc?.pricingModel ?? ""}</div>
           {svc?.methodTag ? <div className="mt-2"><MethodTagChip methodTag={svc.methodTag} compact /></div> : null}
         </div>
         <div className="rounded p-3 bg-[var(--color-paper-warm)] text-sm">

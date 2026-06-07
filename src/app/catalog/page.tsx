@@ -14,11 +14,10 @@ export default async function CatalogDashboard() {
     store.getPackages(),
     store.getSettings(),
   ]);
-  const overrides = services.filter((s) => s.creditCostOverride).length;
   const archived = services.filter((s) => !s.isActive).length;
 
   const cards = [
-    { href: "/catalog/services", title: "Services", count: services.length, sub: `${overrides} override${overrides === 1 ? "" : "s"}, ${archived} archived` },
+    { href: "/catalog/services", title: "Services", count: services.length, sub: `${archived} archived` },
     { href: "/catalog/roles", title: "Roles", count: roles.length, sub: roles.map((r) => r.name.split(" ")[0]).join(", ") },
     { href: "/catalog/packages", title: "Packages", count: packages.length, sub: packages.map((p) => p.name).join(", ") },
     { href: "/catalog/settings", title: "Settings", count: 3, sub: `₹${settings.baseHourlyRate}/h × ${settings.markupMultiplier}, ₹${settings.creditValue}/credit` },

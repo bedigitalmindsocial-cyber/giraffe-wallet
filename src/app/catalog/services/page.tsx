@@ -5,20 +5,20 @@ import { Chip } from "@/components/ui/Chip";
 import { LinkButton } from "@/components/ui/Button";
 import { MethodTagChip } from "@/components/catalog/MethodTagChip";
 import { METHOD_TAG_OPTIONS } from "@/lib/method-tags";
-import type { ServiceMethodTag, ServiceTag } from "@/types";
+import type { ServiceMethodTag, ServiceLifecycleTag } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function ServicesList({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; tag?: string; method?: string; active?: string }> }) {
   const sp = await searchParams;
   const store = getStore();
-  const serviceTag: ServiceTag | undefined = sp.tag ? (sp.tag as ServiceTag) : undefined;
+  const lifecycleTag: ServiceLifecycleTag | undefined = sp.tag ? (sp.tag as ServiceLifecycleTag) : undefined;
   const methodTag: ServiceMethodTag | undefined = sp.method ? (sp.method as ServiceMethodTag) : undefined;
   const [services, roles] = await Promise.all([
     store.getServices({
       search: sp.q,
       categories: sp.cat ? [sp.cat] : undefined,
-      tags: serviceTag ? [serviceTag] : undefined,
+      lifecycleTags: lifecycleTag ? [lifecycleTag] : undefined,
       methodTags: methodTag ? [methodTag] : undefined,
       activeOnly: sp.active === "1",
     }),
@@ -80,8 +80,8 @@ export default async function ServicesList({ searchParams }: { searchParams: Pro
               <th>Service</th>
               <th>Category</th>
               <th>Default role</th>
-              <th className="text-right">Avg hours</th>
-              <th className="text-right">Credit cost</th>
+              <th className="text-right">Credits/unit</th>
+              <th>Pricing</th>
               <th>Method</th>
               <th>Tag</th>
               <th>Active</th>
@@ -101,13 +101,10 @@ export default async function ServicesList({ searchParams }: { searchParams: Pro
                   </td>
                   <td className="text-sm text-[var(--color-muted)]">{s.category}</td>
                   <td className="text-sm">{role?.name ?? "-"}</td>
-                  <td className="mono text-right">{s.avgHours}</td>
-                  <td className="mono text-right">
-                    {s.creditCost}
-                    {s.creditCostOverride ? <Chip variant="warning" className="ml-2">↑ override</Chip> : null}
-                  </td>
+                  <td className="mono text-right">{s.creditsPerUnit}</td>
+                  <td className="text-sm text-[var(--color-muted)]">{s.pricingModel}</td>
                   <td><MethodTagChip methodTag={s.methodTag} compact /></td>
-                  <td>{s.tag ? <Chip variant={s.tag === "DISCONTINUED" ? "danger" : "purple"}>{s.tag}</Chip> : null}</td>
+                  <td>{s.lifecycleTag ? <Chip variant={s.lifecycleTag === "DISCONTINUED" ? "danger" : "purple"}>{s.lifecycleTag}</Chip> : null}</td>
                   <td>{s.isActive ? <Chip variant="success">active</Chip> : <Chip variant="danger">inactive</Chip>}</td>
                   <td className="text-right"><Link className="text-sm text-[var(--color-purple)] hover:underline" href={`/catalog/services/${s.id}`}>Edit</Link></td>
                 </tr>

@@ -8,7 +8,7 @@ import type {
   ReportFilters, Role, RoleInput, Service, ServiceFilters, ServiceInput,
   SettingsInput, Task, TaskFilters, TaskInput, User,
 } from "@/types";
-import { autoCreditCost } from "@/lib/credits";
+import { computeCreditCost } from "@/lib/credits";
 import { engagementSlug, fourDigitPasscode, slugify } from "@/lib/slug";
 import { addDays, daysBetween, todayIso, timestamp } from "@/lib/utils";
 
@@ -40,10 +40,24 @@ function toService(r: any): Service {
   return {
     id: r.id, name: r.name, description: r.description ?? undefined,
     category: r.category, defaultRoleId: r.default_role_id,
-    avgHours: Number(r.avg_hours), includedRevisions: r.included_revisions,
-    tag: r.tag ?? null, methodTag: r.method_tag ?? null, creditCost: r.credit_cost,
-    creditCostOverride: r.credit_cost_override,
-    creditCostOverrideReason: r.credit_cost_override_reason ?? undefined,
+    pricingModel: r.pricing_model ?? 'flat',
+    creditsPerUnit: Number(r.credits_per_unit ?? 0),
+    unitLabel: r.unit_label ?? 'unit',
+    minUnits: r.min_units ?? 1,
+    tierThreshold: r.tier_threshold ?? undefined,
+    tierCreditsPerUnit: r.tier_credits_per_unit ? Number(r.tier_credits_per_unit) : undefined,
+    includedRevisionsPerUnit: Number(r.included_revisions_per_unit ?? 0.5),
+    lateRevisionCredits: r.late_revision_credits ?? 4,
+    internalAvgHours: r.internal_avg_hours ? Number(r.internal_avg_hours) : undefined,
+    scopeInclusions: r.scope_inclusions ?? undefined,
+    scopeExclusions: r.scope_exclusions ?? undefined,
+    clientInputsRequired: r.client_inputs_required ?? undefined,
+    deliverableFormat: r.deliverable_format ?? undefined,
+    turnaroundDays: r.turnaround_days ?? 5,
+    qualityBar: r.quality_bar ?? undefined,
+    lifecycleTag: r.lifecycle_tag ?? null,
+    methodTag: r.method_tag ?? 'HYBRID',
+    audienceTag: r.audience_tag ?? 'CROSS',
     isActive: r.is_active, sortOrder: r.sort_order,
     createdAt: r.created_at, updatedAt: r.updated_at,
   };
@@ -100,6 +114,7 @@ function toTask(r: any, hoursLog: HoursEntry[] = []): Task {
     executorRoleId: r.executor_role_id, assignedTo: r.assigned_to ?? undefined,
     estimatedHours: Number(r.estimated_hours), actualHours: Number(r.actual_hours),
     revisionCount: r.revision_count, revisionsIncluded: r.revisions_included,
+    quantity: r.quantity ?? 1,
     isSystemGenerated: r.is_system_generated,
     approvedByClient: r.approved_by_client,
     approvedByManagerOnBehalf: r.approved_by_manager_on_behalf,
@@ -181,8 +196,9 @@ export const supabaseStore: DataStore = {
     if (filters?.search) q = q.ilike("name", `%${filters.search}%`);
     if (filters?.categories?.length) q = q.in("category", filters.categories);
     if (filters?.roleIds?.length) q = q.in("default_role_id", filters.roleIds);
-    if (filters?.tags?.length) q = q.in("tag", filters.tags);
+    if (filters?.lifecycleTags?.length) q = q.in("lifecycle_tag", filters.lifecycleTags);
     if (filters?.methodTags?.length) q = q.in("method_tag", filters.methodTags);
+    if (filters?.audienceTags?.length) q = q.in("audience_tag", filters.audienceTags);
     const { data, error } = await q;
     if (error) throw error;
     return (data ?? []).map(toService);
@@ -196,19 +212,31 @@ export const supabaseStore: DataStore = {
 
   async upsertService(svc: ServiceInput, actor: Actor) {
     const client = sb();
-    const settings = await supabaseStore.getSettings();
-    const roles = await supabaseStore.getRoles();
-    const role = roles.find(r => r.id === svc.defaultRoleId);
-    const computed = role ? autoCreditCost(svc.avgHours, role.multiplier, settings) : 1;
-    const creditCost = svc.creditCostOverride ? (svc.creditCost ?? computed) : computed;
     const row = {
-      name: svc.name, description: svc.description ?? null, category: svc.category,
-      default_role_id: svc.defaultRoleId, avg_hours: svc.avgHours,
-      included_revisions: svc.includedRevisions ?? 2, tag: svc.tag ?? null,
-      method_tag: svc.methodTag ?? null,
-      credit_cost: creditCost, credit_cost_override: svc.creditCostOverride ?? false,
-      credit_cost_override_reason: svc.creditCostOverrideReason ?? null,
-      is_active: svc.isActive ?? true, sort_order: svc.sortOrder ?? 0,
+      name: svc.name,
+      description: svc.description ?? null,
+      category: svc.category,
+      default_role_id: svc.defaultRoleId,
+      pricing_model: svc.pricingModel ?? 'flat',
+      credits_per_unit: svc.creditsPerUnit ?? 0,
+      unit_label: svc.unitLabel ?? 'unit',
+      min_units: svc.minUnits ?? 1,
+      tier_threshold: svc.tierThreshold ?? null,
+      tier_credits_per_unit: svc.tierCreditsPerUnit ?? null,
+      included_revisions_per_unit: svc.includedRevisionsPerUnit ?? 0.5,
+      late_revision_credits: svc.lateRevisionCredits ?? 4,
+      internal_avg_hours: svc.internalAvgHours ?? null,
+      scope_inclusions: svc.scopeInclusions ?? null,
+      scope_exclusions: svc.scopeExclusions ?? null,
+      client_inputs_required: svc.clientInputsRequired ?? null,
+      deliverable_format: svc.deliverableFormat ?? null,
+      turnaround_days: svc.turnaroundDays ?? 5,
+      quality_bar: svc.qualityBar ?? null,
+      lifecycle_tag: svc.lifecycleTag ?? null,
+      method_tag: svc.methodTag ?? 'HYBRID',
+      audience_tag: svc.audienceTag ?? 'CROSS',
+      is_active: svc.isActive ?? true,
+      sort_order: svc.sortOrder ?? 0,
       updated_at: timestamp(),
     };
     let data: any;
@@ -267,18 +295,9 @@ export const supabaseStore: DataStore = {
     return { baseHourlyRate: Number(data.base_hourly_rate), markupMultiplier: Number(data.markup_multiplier), creditValue: Number(data.credit_value), updatedAt: data.updated_at };
   },
 
-  async previewSettings(s: SettingsInput) {
-    const client = sb();
-    const [{ data: services }, { data: roles }] = await Promise.all([
-      client.from("services").select("*").eq("credit_cost_override", false),
-      client.from("roles").select("*"),
-    ]);
-    const rolesMap = new Map((roles ?? []).map((r: any) => [r.id, Number(r.multiplier)]));
-    return (services ?? []).map((svc: any) => {
-      const mult = rolesMap.get(svc.default_role_id) ?? 1;
-      const newCost = autoCreditCost(Number(svc.avg_hours), mult, s);
-      return { id: svc.id, name: svc.name, oldCost: svc.credit_cost, newCost };
-    }).filter((r: any) => r.oldCost !== r.newCost);
+  async previewSettings(_s: SettingsInput) {
+    // v2 schema: service credit costs are explicit (credits_per_unit), not derived from settings.
+    return [];
   },
 
   async updateSettings(s: SettingsInput, actor: Actor) {
@@ -292,7 +311,6 @@ export const supabaseStore: DataStore = {
         updated_at: timestamp(),
       }, { onConflict: "id" });
     if (error) throw error;
-    await client.rpc("recalc_service_credit_costs");
     const [settings, updatedServices] = await Promise.all([supabaseStore.getSettings(), supabaseStore.getServices()]);
     await supabaseStore.appendAudit({ entityType: "settings", entityId: SETTINGS_ID, action: "settings_updated", actorType: actor.type, actorId: actor.id, actorName: actor.name, payload: s as unknown as Record<string, unknown> });
     return { settings, updatedServices };
@@ -479,11 +497,14 @@ export const supabaseStore: DataStore = {
       .in("category", ["Strategy (Core)", "Tech (Core)", "Content (Core)"])
       .eq("is_active", true);
     for (const svc of coreSvcs ?? []) {
+      const mappedSvc = toService(svc);
       await client.from("tasks").insert({
         engagement_id: eng.id, service_id: svc.id, title: svc.name,
-        status: "approved", bucket: "core", credit_cost_locked: svc.credit_cost,
-        executor_role_id: svc.default_role_id, estimated_hours: svc.avg_hours,
-        actual_hours: 0, revision_count: 0, revisions_included: svc.included_revisions,
+        status: "approved", bucket: "core",
+        quantity: 1,
+        credit_cost_locked: computeCreditCost(mappedSvc, 1),
+        executor_role_id: svc.default_role_id, estimated_hours: svc.internal_avg_hours ?? null,
+        actual_hours: 0, revision_count: 0, revisions_included: svc.included_revisions_per_unit ?? 0.5,
         is_system_generated: true, approved_by_client: false,
         approved_by_manager_on_behalf: true, approval_reason: "System generated",
         created_by: actor.id,
@@ -543,12 +564,15 @@ export const supabaseStore: DataStore = {
   async createTask(t: TaskInput, actor: Actor) {
     const { data: svc, error: svcErr } = await sb().from("services").select("*").eq("id", t.serviceId).single();
     if (svcErr || !svc) throw new Error("Service not found");
+    const quantity = t.quantity ?? 1;
     const { data, error } = await sb().from("tasks").insert({
       engagement_id: t.engagementId, service_id: t.serviceId,
       title: t.title, brief: t.brief ?? null, status: "quoted",
-      bucket: t.bucket, credit_cost_locked: svc.credit_cost,
-      executor_role_id: svc.default_role_id, estimated_hours: svc.avg_hours,
-      actual_hours: 0, revision_count: 0, revisions_included: svc.included_revisions,
+      bucket: t.bucket,
+      quantity,
+      credit_cost_locked: computeCreditCost(toService(svc), quantity),
+      executor_role_id: svc.default_role_id, estimated_hours: svc.internal_avg_hours ?? null,
+      actual_hours: 0, revision_count: 0, revisions_included: svc.included_revisions_per_unit ?? 0.5,
       is_system_generated: false, approved_by_client: false,
       approved_by_manager_on_behalf: false, created_by: actor.id,
     }).select().single();

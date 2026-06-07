@@ -19,7 +19,7 @@ import type {
   User,
 } from "@/types";
 import type { DataStore } from "./store";
-import { autoCreditCost } from "@/lib/credits";
+import { computeCreditCost } from "@/lib/credits";
 import {
   addDays,
   daysBetween,
@@ -125,79 +125,66 @@ interface ServiceSeed {
   description: string;
   category: string;
   roleName: string;
-  avgHours: number;
-  includedRevisions?: number;
-  tag?: Service["tag"];
+  pricingModel?: Service["pricingModel"];
+  creditsPerUnit: number;
+  unitLabel?: string;
+  minUnits?: number;
+  tierThreshold?: number;
+  tierCreditsPerUnit?: number;
+  includedRevisionsPerUnit?: number;
+  lateRevisionCredits?: number;
+  internalAvgHours?: number;
+  turnaroundDays?: number;
+  lifecycleTag?: Service["lifecycleTag"];
   methodTag?: Service["methodTag"];
+  audienceTag?: Service["audienceTag"];
 }
 
 function seedServices(): void {
   const data: ServiceSeed[] = [
-    { name: "Social post (single)", description: "One static post with caption, hashtags, and platform sizing.", category: "Social", roleName: "Executive", avgHours: 1.5, tag: "POPULAR", methodTag: "AI POWERED" },
-    { name: "Social carousel (5 slides)", description: "Multi-slide post with copy and design.", category: "Social", roleName: "Executive", avgHours: 4.0, tag: null, methodTag: "HYBRID" },
-    { name: "Blog graphic", description: "Header graphic for an article. Two revisions included.", category: "Design", roleName: "Executive", avgHours: 3.0, tag: null, methodTag: "HYBRID" },
-    { name: "Web page (single)", description: "One landing page or content page, copy plus design.", category: "Design", roleName: "Manager", avgHours: 8.0, tag: null, methodTag: "HYBRID" },
-    { name: "Long-form article", description: "1200 to 1500 word article with research and edit pass.", category: "Content", roleName: "Manager", avgHours: 8.0, tag: null, methodTag: "HYBRID" },
-    { name: "Whitepaper or case study", description: "Long-form research piece with structure and design.", category: "Content", roleName: "Senior Manager", avgHours: 16.0, tag: null, methodTag: "ARTISAN" },
-    { name: "Pitch deck", description: "12 to 15 slide deck with structure, copy, and design.", category: "Sales Enablement", roleName: "Senior Manager", avgHours: 12.0, tag: null, methodTag: "ARTISAN" },
-    { name: "Brand strategy doc", description: "Positioning, messaging architecture, brand voice.", category: "Strategy", roleName: "Senior Partner", avgHours: 15.0, tag: "NEW", methodTag: "ARTISAN" },
-    { name: "Press article", description: "PR-ready article for placement, including pitch note.", category: "PR", roleName: "Manager", avgHours: 6.0, tag: null, methodTag: "ARTISAN" },
-    { name: "Email campaign", description: "One email with copy, design, and segmentation note.", category: "Email", roleName: "Executive", avgHours: 3.0, tag: null, methodTag: "AI POWERED" },
-    { name: "Video ad (15s to 30s)", description: "Script, edit, and one revision.", category: "Video", roleName: "Manager", avgHours: 12.0, tag: null, methodTag: "HYBRID" },
-    { name: "Photography (half day)", description: "On-site product or environment shoot.", category: "Production", roleName: "Manager", avgHours: 5.0, tag: null, methodTag: "ARTISAN" },
-    { name: "Infographic", description: "Single static infographic with research and design.", category: "Design", roleName: "Executive", avgHours: 4.0, tag: null, methodTag: "HYBRID" },
-    { name: "SEO audit", description: "Technical and content audit with prioritized action list.", category: "SEO", roleName: "Manager", avgHours: 6.0, tag: null, methodTag: "HYBRID" },
-    { name: "New Webpage Template", description: "New reusable webpage structure with layout, core copy blocks, visual direction, and responsive implementation notes.", category: "Web Development", roleName: "Manager", avgHours: 5.0, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "New Webpage Variation", description: "Adapt an approved webpage template for a new offer, audience, or campaign with revised copy and imagery.", category: "Web Development", roleName: "Executive", avgHours: 4.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "AI Webpage Copy & Image Variation", description: "Fast AI-generated page copy and image-direction variant, reviewed and polished by an expert before delivery.", category: "Web Development", roleName: "Executive", avgHours: 2.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Text & Image Changes (per webpage)", description: "Small copy swaps, image replacements, section edits, and formatting updates on an existing webpage.", category: "Website Changes", roleName: "Executive", avgHours: 0.8, includedRevisions: 1, tag: null, methodTag: "AI POWERED" },
-    { name: "Research & Content Writing (100 words)", description: "Research-backed copy block or article section delivered in 100-word units with an edit pass.", category: "Content Writing", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: null, methodTag: "AI POWERED" },
-    { name: "Website Graphics", description: "Custom website visual asset such as a section graphic, hero support visual, feature illustration, or landing-page banner.", category: "Website Graphics", roleName: "Executive", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "AI Website Graphic Variation", description: "AI-assisted website graphic variant from an existing direction, refined for brand fit and clean delivery.", category: "Website Graphics", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Blog Graphics", description: "Article header or supporting blog visual sized for web publishing and social sharing.", category: "Website Graphics", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "AI Blog Graphic Variation", description: "Rapid AI-assisted blog visual variation, curated and polished for brand consistency.", category: "Website Graphics", roleName: "Executive", avgHours: 1.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Static Posts/Ads", description: "Single static social post or ad creative with caption-ready messaging, platform sizing, and export files.", category: "Social Media Creatives", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: "POPULAR", methodTag: "AI POWERED" },
-    { name: "AI Static Post/Ad Variation", description: "Fast AI-powered variation of an approved static post or ad, expert-polished for brand tone and layout.", category: "Social Media Creatives", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Video Ads (<30 Seconds)", description: "Short-form video ad with script, edit direction, basic motion, and one platform-ready export under 30 seconds.", category: "Social Media Creatives", roleName: "Manager", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Video Ads (<60 Seconds)", description: "Video ad up to 60 seconds with script, edit plan, motion direction, and export-ready delivery.", category: "Social Media Creatives", roleName: "Manager", avgHours: 4.0, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Video Ads (>60 Seconds)", description: "Longer-form video ad or explainer requiring deeper scripting, sequencing, edit supervision, and review.", category: "Social Media Creatives", roleName: "Manager", avgHours: 8.0, includedRevisions: 2, tag: null, methodTag: "ARTISAN" },
-    { name: "AI Video Ad Concept Cut (<30 Seconds)", description: "AI-assisted short video concept, script, and first-cut direction for quick testing before a full production pass.", category: "Social Media Creatives", roleName: "Executive", avgHours: 3.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Print Ads", description: "Print-ready advertisement concept with copy, layout, visual direction, and press/export specifications.", category: "Social Media Creatives", roleName: "Manager", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Carousel Ads", description: "Multi-slide ad creative with structured narrative, slide copy, design, and platform-ready exports.", category: "Social Media Creatives", roleName: "Executive", avgHours: 4.0, includedRevisions: 2, tag: "POPULAR", methodTag: "HYBRID" },
-    { name: "AI Carousel Ad Variation", description: "AI-assisted carousel variation using an approved concept, polished by an expert for clarity and brand fit.", category: "Social Media Creatives", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Social Media Covers", description: "Platform cover, header, or profile-banner design adapted to channel dimensions and brand requirements.", category: "Social Media Creatives", roleName: "Executive", avgHours: 3.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Presentation & Pitch Decks (up to 8 pages)", description: "Per-page deck design and copy polish for concise investor, sales, or internal presentations up to 8 pages.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.6, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Presentation & Pitch Decks (more than 8 pages)", description: "Per-page continuation pricing for larger decks once the structure and direction are already established.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.2, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Presentation Templates", description: "Reusable presentation template page with master visual system, typography, components, and page structure.", category: "Presentation & Documents", roleName: "Manager", avgHours: 1.6, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "AI Presentation Draft (up to 8 slides)", description: "AI-assisted first draft for an 8-slide presentation, expert-curated into a coherent narrative and structure.", category: "Presentation & Documents", roleName: "Executive", avgHours: 4.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Infographics (per page)", description: "Single infographic page with information hierarchy, visual structure, copy cleanup, and export-ready design.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "AI Infographic Concept Variation", description: "AI-assisted infographic concept or layout variation refined by an expert for readability and brand alignment.", category: "Presentation & Documents", roleName: "Executive", avgHours: 1.2, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Sales Sheets (per page)", description: "One-page sales sheet or product/service explainer with copy structure, design, and export-ready files.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Reports (per page)", description: "Designed report page with cleaned-up content, visual hierarchy, tables/charts where needed, and final export.", category: "Presentation & Documents", roleName: "Executive", avgHours: 2.4, includedRevisions: 2, tag: null, methodTag: "HYBRID" },
-    { name: "Print Collateral: New Design", description: "New print design for flyers, business cards, posters, signage, stationery, certificates, billboards, covers, T-shirts, inserts, or similar collateral.", category: "Print Media", roleName: "Manager", avgHours: 4.0, includedRevisions: 2, tag: null, methodTag: "ARTISAN" },
-    { name: "Print Collateral: Variation", description: "Variation of an approved print collateral design for another format, size, language, audience, or offer.", category: "Print Media", roleName: "Manager", avgHours: 2.0, includedRevisions: 1, tag: null, methodTag: "HYBRID" },
-    { name: "AI Print Collateral Variation", description: "AI-assisted print collateral variation from an approved design direction, expert-checked for layout and production readiness.", category: "Print Media", roleName: "Executive", avgHours: 2.0, includedRevisions: 1, tag: "NEW", methodTag: "AI POWERED" },
-    { name: "Changes to Print Graphics (after 10 days)", description: "Post-delivery changes to print graphics requested after the included delivery window has passed.", category: "Revisions", roleName: "Executive", avgHours: 1.6, includedRevisions: 1, tag: null, methodTag: "HYBRID" },
-    { name: "Strategy: Quarterly Plan (system task)", description: "Quarterly roadmap and monthly review.", category: "Strategy (Core)", roleName: "Manager", avgHours: 16.0, methodTag: "ARTISAN" },
-    { name: "Website Maintenance (system task)", description: "Uptime, backups, security patches, performance.", category: "Tech (Core)", roleName: "Manager", avgHours: 10.0, methodTag: "AI POWERED" },
-    { name: "Monthly Content System (system task)", description: "One pillar piece plus derivative posts and emails for the month.", category: "Content (Core)", roleName: "Manager", avgHours: 14.0, methodTag: "HYBRID" },
+    // ── Core (system) services ────────────────────────────────────────────
+    { name: "Strategy: Quarterly Plan (system task)", description: "Quarterly roadmap and monthly review.", category: "Strategy (Core)", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 80, internalAvgHours: 16, methodTag: "ARTISAN", audienceTag: "CROSS" },
+    { name: "Website Maintenance (system task)", description: "Uptime, backups, security patches, performance.", category: "Tech (Core)", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 50, internalAvgHours: 10, methodTag: "AI POWERED", audienceTag: "CROSS" },
+    { name: "Monthly Content System (system task)", description: "One pillar piece plus derivative posts and emails for the month.", category: "Content (Core)", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 70, internalAvgHours: 14, methodTag: "HYBRID", audienceTag: "CROSS" },
+
+    // ── Flex services ─────────────────────────────────────────────────────
+    { name: "Social post (single)", description: "One static post with caption, hashtags, and platform sizing.", category: "Social", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 8, internalAvgHours: 1.5, lifecycleTag: "POPULAR", methodTag: "AI POWERED", audienceTag: "CROSS" },
+    { name: "Social carousel (5 slides)", description: "Multi-slide post with copy and design.", category: "Social", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 20, internalAvgHours: 4.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Long-form article", description: "1200 to 1500 word article with research and edit pass.", category: "Content", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 40, internalAvgHours: 8.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Pitch deck", description: "12 to 15 slide deck with structure, copy, and design.", category: "Sales Enablement", roleName: "Senior Manager", pricingModel: "flat", creditsPerUnit: 120, internalAvgHours: 12.0, methodTag: "ARTISAN", audienceTag: "CAPITAL" },
+    { name: "Brand strategy doc", description: "Positioning, messaging architecture, brand voice.", category: "Strategy", roleName: "Senior Partner", pricingModel: "flat", creditsPerUnit: 150, internalAvgHours: 15.0, lifecycleTag: "NEW", methodTag: "ARTISAN", audienceTag: "CROSS" },
+    { name: "Web page (single)", description: "One landing page or content page, copy plus design.", category: "Design", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 60, internalAvgHours: 8.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Blog graphic", description: "Header graphic for an article. Two revisions included.", category: "Design", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 15, includedRevisionsPerUnit: 2, internalAvgHours: 3.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Email campaign", description: "One email with copy, design, and segmentation note.", category: "Email", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 15, internalAvgHours: 3.0, methodTag: "AI POWERED", audienceTag: "CROSS" },
+    { name: "Infographic", description: "Single static infographic with research and design.", category: "Design", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 20, internalAvgHours: 4.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "SEO audit", description: "Technical and content audit with prioritized action list.", category: "SEO", roleName: "Manager", pricingModel: "flat", creditsPerUnit: 30, internalAvgHours: 6.0, methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Static Posts/Ads", description: "Single static social post or ad creative with caption-ready messaging, platform sizing, and export files.", category: "Social Media Creatives", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 12, includedRevisionsPerUnit: 2, internalAvgHours: 2.4, lifecycleTag: "POPULAR", methodTag: "AI POWERED", audienceTag: "CROSS" },
+    { name: "Carousel Ads", description: "Multi-slide ad creative with structured narrative, slide copy, design, and platform-ready exports.", category: "Social Media Creatives", roleName: "Executive", pricingModel: "flat", creditsPerUnit: 20, includedRevisionsPerUnit: 2, internalAvgHours: 4.0, lifecycleTag: "POPULAR", methodTag: "HYBRID", audienceTag: "CROSS" },
+    { name: "Research & Content Writing (100 words)", description: "Research-backed copy block or article section delivered in 100-word units with an edit pass.", category: "Content Writing", roleName: "Executive", pricingModel: "per_100_words", creditsPerUnit: 4, unitLabel: "100 words", minUnits: 1, internalAvgHours: 1.6, methodTag: "AI POWERED", audienceTag: "CROSS" },
+    { name: "Presentation & Pitch Decks (up to 8 pages)", description: "Per-page deck design and copy polish for concise investor, sales, or internal presentations up to 8 pages.", category: "Presentation & Documents", roleName: "Manager", pricingModel: "per_page", creditsPerUnit: 8, unitLabel: "page", minUnits: 1, tierThreshold: 8, tierCreditsPerUnit: 6, includedRevisionsPerUnit: 2, internalAvgHours: 1.6, methodTag: "HYBRID", audienceTag: "CROSS" },
   ];
   let i = 0;
   for (const s of data) {
     const role = roleByName(s.roleName);
-    const cost = autoCreditCost(s.avgHours, role.multiplier, settings);
     services.push({
       id: uid(),
       name: s.name,
       description: s.description,
       category: s.category,
       defaultRoleId: role.id,
-      avgHours: s.avgHours,
-      includedRevisions: s.includedRevisions ?? 2,
-      tag: s.tag ?? null,
-      methodTag: s.methodTag ?? null,
-      creditCost: cost,
-      creditCostOverride: false,
+      pricingModel: s.pricingModel ?? 'flat',
+      creditsPerUnit: s.creditsPerUnit,
+      unitLabel: s.unitLabel ?? 'unit',
+      minUnits: s.minUnits ?? 1,
+      tierThreshold: s.tierThreshold,
+      tierCreditsPerUnit: s.tierCreditsPerUnit,
+      includedRevisionsPerUnit: s.includedRevisionsPerUnit ?? 0.5,
+      lateRevisionCredits: s.lateRevisionCredits ?? 4,
+      internalAvgHours: s.internalAvgHours,
+      turnaroundDays: s.turnaroundDays ?? 5,
+      lifecycleTag: s.lifecycleTag ?? null,
+      methodTag: s.methodTag ?? 'HYBRID',
+      audienceTag: s.audienceTag ?? 'CROSS',
       isActive: true,
       sortOrder: i++,
       createdAt: timestamp(),
@@ -324,12 +311,13 @@ function makeFlexTask(eng: Engagement, service: Service, title: string, brief: s
     brief,
     status: "quoted",
     bucket: "flex",
-    creditCostLocked: service.creditCost,
+    quantity: 1,
+    creditCostLocked: computeCreditCost(service, 1),
     executorRoleId: service.defaultRoleId,
-    estimatedHours: service.avgHours,
+    estimatedHours: service.internalAvgHours ?? 0,
     actualHours: 0,
     revisionCount: 0,
-    revisionsIncluded: service.includedRevisions,
+    revisionsIncluded: service.includedRevisionsPerUnit,
     isSystemGenerated: false,
     approvedByClient: false,
     approvedByManagerOnBehalf: false,
@@ -357,12 +345,13 @@ function createSystemCoreTasks(eng: Engagement): void {
         brief: svc.description,
         status: "approved",
         bucket: "core",
-        creditCostLocked: svc.creditCost,
+        quantity: 1,
+        creditCostLocked: computeCreditCost(svc, 1),
         executorRoleId: svc.defaultRoleId,
-        estimatedHours: svc.avgHours,
+        estimatedHours: svc.internalAvgHours ?? 0,
         actualHours: 0,
         revisionCount: 0,
-        revisionsIncluded: svc.includedRevisions,
+        revisionsIncluded: svc.includedRevisionsPerUnit,
         isSystemGenerated: true,
         approvedByClient: false,
         approvedByManagerOnBehalf: false,
@@ -482,8 +471,9 @@ export const mockStore: DataStore = {
     }
     if (filters?.categories?.length) out = out.filter((s) => filters.categories!.includes(s.category));
     if (filters?.roleIds?.length) out = out.filter((s) => filters.roleIds!.includes(s.defaultRoleId));
-    if (filters?.tags?.length) out = out.filter((s) => filters.tags!.includes(s.tag));
+    if (filters?.lifecycleTags?.length) out = out.filter((s) => filters.lifecycleTags!.includes(s.lifecycleTag ?? null));
     if (filters?.methodTags?.length) out = out.filter((s) => filters.methodTags!.includes(s.methodTag));
+    if (filters?.audienceTags?.length) out = out.filter((s) => filters.audienceTags!.includes(s.audienceTag));
     if (filters?.activeOnly) out = out.filter((s) => s.isActive);
     return out.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   },
@@ -491,17 +481,13 @@ export const mockStore: DataStore = {
     return services.find((s) => s.id === id) ?? null;
   },
   async upsertService(input, actor) {
-    const role = roles.find((r) => r.id === input.defaultRoleId);
-    if (!role) throw new Error("Default role not found");
-    const computed = autoCreditCost(input.avgHours, role.multiplier, settings);
-    const cost = input.creditCostOverride && typeof input.creditCost === "number" ? input.creditCost : computed;
+    if (!roles.find((r) => r.id === input.defaultRoleId)) throw new Error("Default role not found");
 
     const now = timestamp();
     const id = input.id ?? uid();
     const existing = services.find((s) => s.id === id);
-    const tag = input.tag ?? null;
-    const methodTag = input.methodTag ?? null;
-    const isActive = tag === "DISCONTINUED" ? false : input.isActive ?? true;
+    const lifecycleTag = input.lifecycleTag ?? null;
+    const isActive = lifecycleTag === "DISCONTINUED" ? false : input.isActive ?? true;
 
     const next: Service = existing
       ? {
@@ -510,13 +496,24 @@ export const mockStore: DataStore = {
           description: input.description,
           category: input.category,
           defaultRoleId: input.defaultRoleId,
-          avgHours: input.avgHours,
-          includedRevisions: input.includedRevisions ?? existing.includedRevisions,
-          tag,
-          methodTag,
-          creditCost: cost,
-          creditCostOverride: !!input.creditCostOverride,
-          creditCostOverrideReason: input.creditCostOverrideReason,
+          pricingModel: input.pricingModel ?? existing.pricingModel,
+          creditsPerUnit: input.creditsPerUnit ?? existing.creditsPerUnit,
+          unitLabel: input.unitLabel ?? existing.unitLabel,
+          minUnits: input.minUnits ?? existing.minUnits,
+          tierThreshold: input.tierThreshold ?? existing.tierThreshold,
+          tierCreditsPerUnit: input.tierCreditsPerUnit ?? existing.tierCreditsPerUnit,
+          includedRevisionsPerUnit: input.includedRevisionsPerUnit ?? existing.includedRevisionsPerUnit,
+          lateRevisionCredits: input.lateRevisionCredits ?? existing.lateRevisionCredits,
+          internalAvgHours: input.internalAvgHours ?? existing.internalAvgHours,
+          scopeInclusions: input.scopeInclusions ?? existing.scopeInclusions,
+          scopeExclusions: input.scopeExclusions ?? existing.scopeExclusions,
+          clientInputsRequired: input.clientInputsRequired ?? existing.clientInputsRequired,
+          deliverableFormat: input.deliverableFormat ?? existing.deliverableFormat,
+          turnaroundDays: input.turnaroundDays ?? existing.turnaroundDays,
+          qualityBar: input.qualityBar ?? existing.qualityBar,
+          lifecycleTag,
+          methodTag: input.methodTag ?? existing.methodTag,
+          audienceTag: input.audienceTag ?? existing.audienceTag,
           isActive,
           sortOrder: input.sortOrder ?? existing.sortOrder,
           updatedAt: now,
@@ -527,13 +524,24 @@ export const mockStore: DataStore = {
           description: input.description,
           category: input.category,
           defaultRoleId: input.defaultRoleId,
-          avgHours: input.avgHours,
-          includedRevisions: input.includedRevisions ?? 2,
-          tag,
-          methodTag,
-          creditCost: cost,
-          creditCostOverride: !!input.creditCostOverride,
-          creditCostOverrideReason: input.creditCostOverrideReason,
+          pricingModel: input.pricingModel ?? 'flat',
+          creditsPerUnit: input.creditsPerUnit ?? 0,
+          unitLabel: input.unitLabel ?? 'unit',
+          minUnits: input.minUnits ?? 1,
+          tierThreshold: input.tierThreshold,
+          tierCreditsPerUnit: input.tierCreditsPerUnit,
+          includedRevisionsPerUnit: input.includedRevisionsPerUnit ?? 0.5,
+          lateRevisionCredits: input.lateRevisionCredits ?? 4,
+          internalAvgHours: input.internalAvgHours,
+          scopeInclusions: input.scopeInclusions,
+          scopeExclusions: input.scopeExclusions,
+          clientInputsRequired: input.clientInputsRequired,
+          deliverableFormat: input.deliverableFormat,
+          turnaroundDays: input.turnaroundDays ?? 5,
+          qualityBar: input.qualityBar,
+          lifecycleTag,
+          methodTag: input.methodTag ?? 'HYBRID',
+          audienceTag: input.audienceTag ?? 'CROSS',
           isActive,
           sortOrder: input.sortOrder ?? services.length,
           createdAt: now,
@@ -557,7 +565,7 @@ export const mockStore: DataStore = {
     const s = services.find((x) => x.id === id);
     if (!s) return;
     s.isActive = false;
-    s.tag = "DISCONTINUED";
+    s.lifecycleTag = "DISCONTINUED";
     s.updatedAt = timestamp();
     pushAudit({
       entityType: "service",
@@ -617,32 +625,17 @@ export const mockStore: DataStore = {
   async getSettings() {
     return settings;
   },
-  async previewSettings(s) {
-    return services
-      .filter((svc) => !svc.creditCostOverride)
-      .map((svc) => {
-        const role = roles.find((r) => r.id === svc.defaultRoleId)!;
-        const newCost = autoCreditCost(svc.avgHours, role.multiplier, s);
-        return { id: svc.id, name: svc.name, oldCost: svc.creditCost, newCost };
-      })
-      .filter((row) => row.oldCost !== row.newCost);
+  async previewSettings(_s) {
+    // v2 schema: service credit costs are explicit (creditsPerUnit), not derived from settings.
+    return [];
   },
   async updateSettings(input, actor) {
-    const previews = await this.previewSettings(input);
     settings = {
       baseHourlyRate: input.baseHourlyRate,
       markupMultiplier: input.markupMultiplier,
       creditValue: input.creditValue,
       updatedAt: timestamp(),
     };
-    const updated: Service[] = [];
-    for (const p of previews) {
-      const svc = services.find((s) => s.id === p.id);
-      if (!svc) continue;
-      svc.creditCost = p.newCost;
-      svc.updatedAt = timestamp();
-      updated.push(svc);
-    }
     pushAudit({
       entityType: "settings",
       entityId: "settings",
@@ -650,9 +643,9 @@ export const mockStore: DataStore = {
       actorType: actor.type,
       actorId: actor.id,
       actorName: actor.name,
-      payload: { settings, recalcedServices: previews },
+      payload: { settings },
     });
-    return { settings, updatedServices: updated };
+    return { settings, updatedServices: [] };
   },
 
   // Clients
@@ -844,14 +837,16 @@ export const mockStore: DataStore = {
     if (eng.status !== "active") throw new Error(`Engagement is ${eng.status}. New tasks not allowed.`);
     const svc = services.find((s) => s.id === input.serviceId);
     if (!svc) throw new Error("Service not found");
-    if (!svc.isActive || svc.tag === "DISCONTINUED") throw new Error("Service is not available");
+    if (!svc.isActive || svc.lifecycleTag === "DISCONTINUED") throw new Error("Service is not available");
 
+    const quantity = input.quantity ?? 1;
+    const creditCost = computeCreditCost(svc, quantity);
     const balance = computeBalance(eng);
-    if (input.bucket === "flex" && balance.flexCreditsRemaining < svc.creditCost) {
-      throw new Error(`Insufficient flex credits. Need ${svc.creditCost - balance.flexCreditsRemaining} more.`);
+    if (input.bucket === "flex" && balance.flexCreditsRemaining < creditCost) {
+      throw new Error(`Insufficient flex credits. Need ${creditCost - balance.flexCreditsRemaining} more.`);
     }
-    if (input.bucket === "core" && balance.coreCreditsRemaining < svc.creditCost) {
-      throw new Error(`Insufficient core credits. Need ${svc.creditCost - balance.coreCreditsRemaining} more.`);
+    if (input.bucket === "core" && balance.coreCreditsRemaining < creditCost) {
+      throw new Error(`Insufficient core credits. Need ${creditCost - balance.coreCreditsRemaining} more.`);
     }
 
     const t: Task = {
@@ -862,12 +857,13 @@ export const mockStore: DataStore = {
       brief: input.brief,
       status: "quoted",
       bucket: input.bucket,
-      creditCostLocked: svc.creditCost,
+      quantity,
+      creditCostLocked: creditCost,
       executorRoleId: svc.defaultRoleId,
-      estimatedHours: svc.avgHours,
+      estimatedHours: svc.internalAvgHours ?? 0,
       actualHours: 0,
       revisionCount: 0,
-      revisionsIncluded: svc.includedRevisions,
+      revisionsIncluded: svc.includedRevisionsPerUnit,
       isSystemGenerated: false,
       approvedByClient: false,
       approvedByManagerOnBehalf: false,

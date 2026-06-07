@@ -40,8 +40,24 @@ export interface SettingsInput {
   creditValue: number;
 }
 
-export type ServiceTag = "NEW" | "POPULAR" | "PROMO" | "DISCONTINUED" | null;
-export type ServiceMethodTag = "AI POWERED" | "HYBRID" | "ARTISAN" | null;
+export type ServicePricingModel =
+  | "flat"
+  | "per_page"
+  | "per_100_words"
+  | "per_design"
+  | "per_episode";
+
+export type ServiceLifecycleTag =
+  | "NEW"
+  | "POPULAR"
+  | "PROMO"
+  | "LIMITED"
+  | "DISCONTINUED"
+  | null;
+
+export type ServiceMethodTag = "AI POWERED" | "HYBRID" | "ARTISAN";
+
+export type ServiceAudienceTag = "MFG" | "CAPITAL" | "EXPORT" | "TALENT" | "CROSS";
 
 export interface Service {
   id: string;
@@ -49,13 +65,24 @@ export interface Service {
   description?: string;
   category: string;
   defaultRoleId: string;
-  avgHours: number;
-  includedRevisions: number;
-  tag: ServiceTag;
+  pricingModel: ServicePricingModel;
+  creditsPerUnit: number;
+  unitLabel: string;
+  minUnits: number;
+  tierThreshold?: number;
+  tierCreditsPerUnit?: number;
+  includedRevisionsPerUnit: number;
+  lateRevisionCredits: number;
+  internalAvgHours?: number;
+  scopeInclusions?: string;
+  scopeExclusions?: string;
+  clientInputsRequired?: string;
+  deliverableFormat?: string;
+  turnaroundDays: number;
+  qualityBar?: string;
+  lifecycleTag?: ServiceLifecycleTag;
   methodTag: ServiceMethodTag;
-  creditCost: number;
-  creditCostOverride: boolean;
-  creditCostOverrideReason?: string;
+  audienceTag: ServiceAudienceTag;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -68,13 +95,24 @@ export interface ServiceInput {
   description?: string;
   category: string;
   defaultRoleId: string;
-  avgHours: number;
-  includedRevisions?: number;
-  tag?: ServiceTag;
+  pricingModel?: ServicePricingModel;
+  creditsPerUnit?: number;
+  unitLabel?: string;
+  minUnits?: number;
+  tierThreshold?: number;
+  tierCreditsPerUnit?: number;
+  includedRevisionsPerUnit?: number;
+  lateRevisionCredits?: number;
+  internalAvgHours?: number;
+  scopeInclusions?: string;
+  scopeExclusions?: string;
+  clientInputsRequired?: string;
+  deliverableFormat?: string;
+  turnaroundDays?: number;
+  qualityBar?: string;
+  lifecycleTag?: ServiceLifecycleTag;
   methodTag?: ServiceMethodTag;
-  creditCost?: number;
-  creditCostOverride?: boolean;
-  creditCostOverrideReason?: string;
+  audienceTag?: ServiceAudienceTag;
   isActive?: boolean;
   sortOrder?: number;
 }
@@ -83,8 +121,9 @@ export interface ServiceFilters {
   search?: string;
   categories?: string[];
   roleIds?: string[];
-  tags?: ServiceTag[];
+  lifecycleTags?: ServiceLifecycleTag[];
   methodTags?: ServiceMethodTag[];
+  audienceTags?: ServiceAudienceTag[];
   activeOnly?: boolean;
 }
 
@@ -223,6 +262,7 @@ export interface Task {
   actualHours: number;
   revisionCount: number;
   revisionsIncluded: number;
+  quantity: number;
   isSystemGenerated: boolean;
   approvedByClient: boolean;
   approvedByManagerOnBehalf: boolean;
@@ -245,6 +285,7 @@ export interface TaskInput {
   title: string;
   brief?: string;
   bucket: TaskBucket;
+  quantity?: number;
 }
 
 export interface TaskFilters {

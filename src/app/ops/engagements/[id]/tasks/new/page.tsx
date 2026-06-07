@@ -26,7 +26,7 @@ export default async function NewTask({ params }: { params: Promise<{ id: string
       </AppShell>
     );
   }
-  const services = (await store.getServices({ activeOnly: true })).filter((s) => s.tag !== "DISCONTINUED");
+  const services = (await store.getServices({ activeOnly: true })).filter((s) => s.lifecycleTag !== "DISCONTINUED");
 
   async function action(formData: FormData) {
     "use server";
